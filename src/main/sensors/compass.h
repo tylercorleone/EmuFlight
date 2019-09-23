@@ -61,6 +61,7 @@ typedef struct compassConfig_s {
 
 PG_DECLARE(compassConfig_t, compassConfig);
 
+bool compassIsHealthyForVolumeLimitation(void);
 bool compassIsHealthy(quaternion *q);
 void compassUpdate(timeUs_t currentTime);
 bool compassInit(void);

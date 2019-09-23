@@ -289,6 +289,10 @@ bool compassIsHealthy(quaternion *q) {
   //todo findout mag healthy limits
   return ((1 < magModulus) && (magModulus < 10000));
 }
+bool compassIsHealthyForVolumeLimitation(void)
+{
+    return (mag.magADC[X] != 0) && (mag.magADC[Y] != 0) && (mag.magADC[Z] != 0);
+}
 
 void compassUpdate(timeUs_t currentTimeUs)
 {

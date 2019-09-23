@@ -479,7 +479,7 @@ void processSmartPortTelemetry(smartPortPayload_t *payload, volatile bool *clear
         // Pass only the payload: skip frameId
         uint8_t *frameStart = (uint8_t *)&payload->valueId;
         smartPortMspReplyPending = handleMspFrame(frameStart, SMARTPORT_MSP_PAYLOAD_SIZE, &skipRequests);
-         
+
         // Don't send MSP response after write to eeprom
         // CPU just got out of suspended state after writeEEPROM()
         // We don't know if the receiver is listening again
@@ -708,16 +708,7 @@ void processSmartPortTelemetry(smartPortPayload_t *payload, volatile bool *clear
                 if (FLIGHT_MODE(MAG_MODE)) {
                     tmpi += 100;
                 }
-                if (FLIGHT_MODE(BARO_MODE)) {
-                    tmpi += 200;
-                }
-
-                if (FLIGHT_MODE(GPS_HOLD_MODE)) {
-                    tmpi += 1000;
-                }
-                if (FLIGHT_MODE(GPS_HOME_MODE)) {
-                    tmpi += 2000;
-                }
+              
                 if (FLIGHT_MODE(HEADFREE_MODE)) {
                     tmpi += 4000;
                 }

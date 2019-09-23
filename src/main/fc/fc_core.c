@@ -89,7 +89,7 @@
 #include "flight/pid.h"
 #include "flight/servos.h"
 #include "flight/gps_rescue.h"
-
+#include "flight/volume_limitation.h"
 
 // June 2013     V2.2-dev
 
@@ -257,6 +257,15 @@ void updateArmingStatus(void)
             } else {
                 setArmingDisabled(ARMING_DISABLED_GPS);
             }
+        }
+#endif
+
+#ifdef USE_VOLUME_LIMITATION
+        // Arming is forbidden before GPS FIX
+        if ((STATE(GPS_FIX) || ARMING_FLAG(WAS_EVER_ARMED)) || !gpsNeededForVolLim()) {
+            unsetArmingDisabled(ARMING_DISABLED_GPS);
+        } else {
+            setArmingDisabled(ARMING_DISABLED_GPS);
         }
 #endif
 
@@ -758,6 +767,52 @@ bool processRx(timeUs_t currentTimeUs)
     } else {
         DISABLE_FLIGHT_MODE(HORIZON_MODE);
     }
+
+
+    #ifdef USE_VOLUME_LIMITATION
+    	    if (volLimitation_DistanceLimStatus() && sensors(SENSOR_ACC) && volLimSanityCheck()) {
+    	        // bumpless transfer to Level mode
+    	        canUseHorizonMode = false;
+    	        if (!FLIGHT_MODE(ANGLE_MODE)) {
+    	            ENABLE_FLIGHT_MODE(ANGLE_MODE);
+    	        }
+    	        // Transition to SAFE HOLD mode
+    	        if (!FLIGHT_MODE(SAFE_HOLD_MODE)) {
+    	            ENABLE_FLIGHT_MODE(SAFE_HOLD_MODE);
+    	        }
+    	        // Transition to HOLD mode
+    	        if (!FLIGHT_MODE(ALTHOLD_MODE)) {
+    	            ENABLE_FLIGHT_MODE(ALTHOLD_MODE);
+    	        }
+    	    } else if (sensors(SENSOR_ACC) && volLimSanityCheck()) {
+    	        if (IS_RC_MODE_ACTIVE(BOXSAFEHOLD)) {
+    	            if (!FLIGHT_MODE(SAFE_HOLD_MODE)) {
+    	                // Transition to HOLD mode
+    	                ENABLE_FLIGHT_MODE(SAFE_HOLD_MODE);
+    	            }
+    	        } else {
+    	            if (FLIGHT_MODE(SAFE_HOLD_MODE)) {
+    	                // Transition from HOLD mode
+    	                DISABLE_FLIGHT_MODE(SAFE_HOLD_MODE);
+    	            }
+    	        }
+    	        if (IS_RC_MODE_ACTIVE(BOXALTHOLD)) {
+    	          if (!FLIGHT_MODE(ALTHOLD_MODE)) {
+    	              // Transition to HOLD mode
+    	              ENABLE_FLIGHT_MODE(ALTHOLD_MODE);
+    	          }
+    	        } else {
+    	            if (FLIGHT_MODE(ALTHOLD_MODE)) {
+    	                // Transition from HOLD mode
+    	                DISABLE_FLIGHT_MODE(ALTHOLD_MODE);
+    	            }
+    	        }
+    	    } else {
+    	        DISABLE_FLIGHT_MODE(SAFE_HOLD_MODE);
+    	        DISABLE_FLIGHT_MODE(ALTHOLD_MODE);
+    	    }
+    	#endif
+
 
 #ifdef USE_GPS_RESCUE
 if(isLimitDistanceReach()){

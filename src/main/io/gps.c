@@ -53,6 +53,7 @@
 #include "flight/imu.h"
 #include "flight/pid.h"
 #include "flight/gps_rescue.h"
+#include "flight/volume_limitation.h"
 
 #include "sensors/sensors.h"
 
@@ -76,6 +77,7 @@ static char *gpsPacketLogChar = gpsPacketLog;
 // **********************
 int32_t GPS_home[2];
 uint16_t GPS_distanceToHome;        // distance to home point in meters
+uint32_t GPS_distanceToHomeCM;
 int16_t GPS_directionToHome;        // direction to home or hol point in degrees
 float dTnav;             // Delta Time in milliseconds for navigation computations, updated with every good GPS read
 int16_t actual_speed[2] = { 0, 0 };
@@ -535,6 +537,9 @@ void gpsUpdate(timeUs_t currentTimeUs)
         updateGPSRescueState();
     }
 #endif
+#ifdef USE_VOLUME_LIMITATION
+    volLimitation_SensorUpdate();
+#endif
 }
 
 static void gpsNewData(uint16_t c)
@@ -577,6 +582,11 @@ bool gpsNewFrame(uint8_t c)
     return false;
 }
 
+// Check for healthy communications
+bool gpsIsHealthy()
+{
+    return (gpsData.state == GPS_RECEIVING_DATA);
+}
 
 /* This is a light implementation of a GPS frame decoding
    This should work with most of modern GPS devices configured to output 5 frames.
@@ -1281,6 +1291,7 @@ void GPS_calculateDistanceAndDirectionToHome(void)
         int32_t dir;
         GPS_distance_cm_bearing(&gpsSol.llh.lat, &gpsSol.llh.lon, &GPS_home[LAT], &GPS_home[LON], &dist, &dir);
         GPS_distanceToHome = dist / 100;
+        GPS_distanceToHomeCM = dist;
         GPS_directionToHome = dir / 100;
     } else {
         GPS_distanceToHome = 0;
@@ -1369,6 +1380,9 @@ void onGpsNewData(void)
 
 #ifdef USE_GPS_RESCUE
     rescueNewGpsData();
+#endif
+#ifdef USE_VOLUME_LIMITATION
+	    volLimitation_NewGpsData();
 #endif
 }
 

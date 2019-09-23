@@ -58,6 +58,7 @@
 #include "flight/mixer.h"
 #include "flight/mixer_tricopter.h"
 #include "flight/pid.h"
+#include "flight/volume_limitation.h"
 
 #include "rx/rx.h"
 
@@ -823,6 +824,17 @@ FAST_CODE_NOINLINE void mixTable(timeUs_t currentTimeUs, uint8_t vbatPidCompensa
     if (FLIGHT_MODE(GPS_RESCUE_MODE)) {
         throttle = gpsRescueGetThrottle();
     }
+#endif
+#if defined(USE_VOLUME_LIMITATION) && defined(USE_GPS)
+	    // Altitude limitation
+	    throttle = volLimitation_AltitudeLim(throttle);
+	    /************ ALTHOLD MODE activation ***************/
+	    if (FLIGHT_MODE(ALTHOLD_MODE)) {
+	        throttle = volLimitation_AltitudeHold(1);
+	    } else {
+	        volLimitation_AltitudeHold(0);
+	    }
+	    /****************************************************/
 #endif
 
     motorMixRange = motorMixMax - motorMixMin;

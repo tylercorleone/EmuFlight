@@ -46,6 +46,7 @@
 #include "flight/imu.h"
 #include "flight/gps_rescue.h"
 #include "flight/pid.h"
+#include "flight/volume_limitation.h"
 #include "scheduler/scheduler.h"
 #include "pg/rx.h"
 #include "rx/rx.h"
@@ -191,6 +192,16 @@ static void calculateSetpointRate(int axis)
         rcDeflectionAbs[axis] = 0;
     } else
 #endif
+#ifdef USE_VOLUME_LIMITATION
+	    if ((axis == FD_YAW) && FLIGHT_MODE(SAFE_HOLD_MODE)) {
+	        // If GPS Rescue is active then override the setpointRate used in the
+	        // pid controller with the value calculated from the desired heading logic.
+	        angleRate = gpsHoldGetYawRate();
+	        // Treat the stick input as centered to avoid any stick deflection base modifications (like acceleration limit)
+	        rcDeflection[axis] = 0;
+	        rcDeflectionAbs[axis] = 0;
+	    } else
+	#endif
     {
         // scale rcCommandf to range [-1.0, 1.0]
         float rcCommandf = rcCommand[axis] / 500.0f;

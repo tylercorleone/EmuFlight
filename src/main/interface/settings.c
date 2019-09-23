@@ -52,6 +52,7 @@
 #include "flight/pid.h"
 #include "flight/position.h"
 #include "flight/servos.h"
+#include "flight/volume_limitation.h"
 
 #include "interface/settings.h"
 
@@ -798,6 +799,33 @@ const clivalue_t valueTable[] = {
     { "gps_rescue_throttle_hover",  VAR_UINT16 | MASTER_VALUE, .config.minmax = { 1000, 2000 }, PG_GPS_RESCUE, offsetof(gpsRescueConfig_t, throttleHover) },
     { "gps_rescue_sanity_checks",   VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_GPS_RESCUE }, PG_GPS_RESCUE, offsetof(gpsRescueConfig_t, sanityChecks) },
     { "gps_rescue_min_sats",        VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0, 50 }, PG_GPS_RESCUE, offsetof(gpsRescueConfig_t, minSats) },
+#endif
+
+#ifdef USE_VOLUME_LIMITATION
+    // PG_VOLUME_LIMITATION
+    { "vol_lim_altitude",           VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_VOLUME_LIMITATION, offsetof(volLimitationConfig_t, altitudeLimitation) },
+    { "vol_lim_distance",           VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_VOLUME_LIMITATION, offsetof(volLimitationConfig_t, distanceLimitation) },
+    { "vol_lim_landing",            VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_VOLUME_LIMITATION, offsetof(volLimitationConfig_t, landingAllowed) },
+    { "vol_lim_max_altitude",       VAR_UINT16 | MASTER_VALUE, .config.minmax = { 20, 500 }, PG_VOLUME_LIMITATION, offsetof(volLimitationConfig_t, maxAltitude) },
+    { "vol_lim_alert_alti_bef_max", VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0, 50 }, PG_VOLUME_LIMITATION, offsetof(volLimitationConfig_t, alertAltitudeBeforeMax) },
+    { "vol_lim_max_dist",           VAR_UINT16 | MASTER_VALUE, .config.minmax = { 50, 5000 }, PG_VOLUME_LIMITATION, offsetof(volLimitationConfig_t, maxDistance) },
+    { "vol_lim_alert_dist_bef_max", VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0, 50 }, PG_VOLUME_LIMITATION, offsetof(volLimitationConfig_t, alertDistanceBeforeMax) },
+    { "vol_lim_throttle_p",         VAR_UINT16 | MASTER_VALUE, .config.minmax = { 0, 500 }, PG_VOLUME_LIMITATION, offsetof(volLimitationConfig_t, throttleP) },
+    { "vol_lim_throttle_i",         VAR_UINT16 | MASTER_VALUE, .config.minmax = { 0, 500 }, PG_VOLUME_LIMITATION, offsetof(volLimitationConfig_t, throttleI) },
+    { "vol_lim_throttle_d",         VAR_UINT16 | MASTER_VALUE, .config.minmax = { 0, 500 }, PG_VOLUME_LIMITATION, offsetof(volLimitationConfig_t, throttleD) },
+    { "vol_lim_throttle_min",       VAR_UINT16 | MASTER_VALUE, .config.minmax = { 1000, 2000 }, PG_VOLUME_LIMITATION, offsetof(volLimitationConfig_t, throttleMin) },
+    { "vol_lim_throttle_max",       VAR_UINT16 | MASTER_VALUE, .config.minmax = { 1000, 2000 }, PG_VOLUME_LIMITATION, offsetof(volLimitationConfig_t, throttleMax) },
+    { "vol_lim_throttle_hover",     VAR_UINT16 | MASTER_VALUE, .config.minmax = { 1000, 2000 }, PG_VOLUME_LIMITATION, offsetof(volLimitationConfig_t, throttleHover) },
+    { "vol_lim_safehold_pitch_p",   VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0, 200 }, PG_VOLUME_LIMITATION, offsetof(volLimitationConfig_t, safeHold_pitch_P) },
+    { "vol_lim_safehold_pitch_i",   VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0, 200 }, PG_VOLUME_LIMITATION, offsetof(volLimitationConfig_t, safeHold_pitch_I) },
+    { "vol_lim_safehold_pitch_d",   VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0, 200 }, PG_VOLUME_LIMITATION, offsetof(volLimitationConfig_t, safeHold_pitch_D) },
+    { "vol_lim_safehold_roll_p",    VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0, 200 }, PG_VOLUME_LIMITATION, offsetof(volLimitationConfig_t, safeHold_roll_P) },
+    { "vol_lim_safehold_roll_i",    VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0, 200 }, PG_VOLUME_LIMITATION, offsetof(volLimitationConfig_t, safeHold_roll_I) },
+    { "vol_lim_safehold_roll_d",    VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0, 200 }, PG_VOLUME_LIMITATION, offsetof(volLimitationConfig_t, safeHold_roll_D) },
+    { "vol_lim_safehold_angle_max", VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0, 50 }, PG_VOLUME_LIMITATION, offsetof(volLimitationConfig_t, safeHoldAngleMax) },
+    { "vol_lim_min_safe_altitude",  VAR_UINT8  | MASTER_VALUE, .config.minmax = { 10, 100 }, PG_VOLUME_LIMITATION, offsetof(volLimitationConfig_t, minSafeAltitude) },
+    { "vol_lim_min_sats",           VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0, 50 }, PG_VOLUME_LIMITATION, offsetof(volLimitationConfig_t, minSats) },
+    { "vol_lim_arming_without_gps", VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_VOLUME_LIMITATION, offsetof(volLimitationConfig_t, armingWithoutGps) },
 #endif
 #endif
 

@@ -73,6 +73,7 @@
 #include "flight/mixer.h"
 #endif
 #include "flight/pid.h"
+#include "flight/volume_limitation.h"
 
 #include "io/asyncfatfs/asyncfatfs.h"
 #include "io/beeper.h"
@@ -608,6 +609,10 @@ static bool osdDrawSingleElement(uint8_t item)
                 strcpy(buff, "!FS!");
             } else if (FLIGHT_MODE(GPS_RESCUE_MODE)) {
                 strcpy(buff, "RESC");
+            } else if (FLIGHT_MODE(SAFE_HOLD_MODE)) {
+                strcpy(buff, "SAFEHOLD");
+            } else if (FLIGHT_MODE(ALTHOLD_MODE)) {
+                strcpy(buff, "ALTHOLD");
             } else if (FLIGHT_MODE(HEADFREE_MODE)) {
                 strcpy(buff, "HEAD");
             } else if (FLIGHT_MODE(ANGLE_MODE)) {
@@ -792,6 +797,22 @@ static bool osdDrawSingleElement(uint8_t item)
                 osdFormatMessage(buff, OSD_FORMAT_MESSAGE_BUFFER_SIZE, " LAND NOW");
                 break;
             }
+            #ifdef USE_VOLUME_LIMITATION
+            // Volume limitation OSD warnings
+              if(getVolLimAlert().sensorFailure == 1) {
+                  osdFormatMessage(buff, OSD_FORMAT_MESSAGE_BUFFER_SIZE, "SENSOR FAILURE");
+                  return;
+              } else if(getVolLimAlert().altitude == 1) {
+                osdFormatMessage(buff, OSD_FORMAT_MESSAGE_BUFFER_SIZE, "ALTI MAX");
+                return;
+              } else if(getVolLimAlert().distance == 1) {
+                osdFormatMessage(buff, OSD_FORMAT_MESSAGE_BUFFER_SIZE, "DIST MAX");
+                return;
+              } else if(getVolLimAlert().safeHold == 1) {
+                osdFormatMessage(buff, OSD_FORMAT_MESSAGE_BUFFER_SIZE, "SAFEHOLD MODE");
+                return;
+              }
+            #endif
 
             // Show warning if in HEADFREE flight mode
             if (FLIGHT_MODE(HEADFREE_MODE)) {

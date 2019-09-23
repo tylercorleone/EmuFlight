@@ -124,6 +124,7 @@ extern char gpsPacketLog[GPS_PACKET_LOG_ENTRY_COUNT];
 
 extern int32_t GPS_home[2];
 extern uint16_t GPS_distanceToHome;        // distance to home point in meters
+extern uint32_t GPS_distanceToHomeCM;      // distance to home point in cm
 extern int16_t GPS_directionToHome;        // direction to home or hol point in degrees
 extern int16_t GPS_angle[ANGLE_INDEX_COUNT];                // it's the angles that must be applied for GPS correction
 extern float dTnav;             // Delta Time in milliseconds for navigation computations, updated with every good GPS read
@@ -156,6 +157,7 @@ extern uint8_t GPS_svinfo_cno[16];         // Carrier to Noise Ratio (Signal Str
 void gpsInit(void);
 void gpsUpdate(timeUs_t currentTimeUs);
 bool gpsNewFrame(uint8_t c);
+bool gpsIsHealthy(void); // Check for healthy communications
 struct serialPort_s;
 void gpsEnablePassthrough(struct serialPort_s *gpsPassthroughPort);
 void onGpsNewData(void);

@@ -155,6 +155,7 @@
 #include "flight/mixer.h"
 #include "flight/pid.h"
 #include "flight/servos.h"
+#include "flight/volume_limitation.h"
 
 #include "io/rcdevice_cam.h"
 
@@ -618,6 +619,10 @@ void init(void)
         gpsInit();
     }
 #endif
+
+#ifdef USE_VOLUME_LIMITATION
+	    volLimitation_init();
+	#endif
 
 #ifdef USE_LED_STRIP
     ledStripInit();
