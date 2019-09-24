@@ -801,16 +801,16 @@ static bool osdDrawSingleElement(uint8_t item)
             // Volume limitation OSD warnings
               if(getVolLimAlert().sensorFailure == 1) {
                   osdFormatMessage(buff, OSD_FORMAT_MESSAGE_BUFFER_SIZE, "SENSOR FAILURE");
-                  return;
+                  break;
               } else if(getVolLimAlert().altitude == 1) {
                 osdFormatMessage(buff, OSD_FORMAT_MESSAGE_BUFFER_SIZE, "ALTI MAX");
-                return;
+                break;
               } else if(getVolLimAlert().distance == 1) {
                 osdFormatMessage(buff, OSD_FORMAT_MESSAGE_BUFFER_SIZE, "DIST MAX");
-                return;
+                break;
               } else if(getVolLimAlert().safeHold == 1) {
                 osdFormatMessage(buff, OSD_FORMAT_MESSAGE_BUFFER_SIZE, "SAFEHOLD MODE");
-                return;
+                break;
               }
             #endif
 
@@ -1275,17 +1275,7 @@ void osdUpdateAlarms(void)
         CLR_BLINK(OSD_ALTITUDE);
     }
 
-#ifdef USE_GPS
-        if (sensors(SENSOR_GPS) && ARMING_FLAG(ARMED) && STATE(GPS_FIX) && STATE(GPS_FIX_HOME)) {
-            if (osdConfig()->distance_alarm && GPS_distanceToHome >= osdConfig()->distance_alarm) {
-                SET_BLINK(OSD_HOME_DIST);
-            } else {
-                CLR_BLINK(OSD_HOME_DIST);
-            }
-        } else {
-            CLR_BLINK(OSD_HOME_DIST);
-}
-#endif
+
 
 #ifdef USE_ESC_SENSOR
     if (feature(FEATURE_ESC_SENSOR)) {

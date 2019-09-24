@@ -78,9 +78,9 @@
  #define UART2_RX_PIN            PA3
  #define UART2_TX_PIN            PA2
 
- #define USE_UART3
- #define UART3_RX_PIN            PB11
- #define UART3_TX_PIN            PB10
+ //#define USE_UART3
+ //#define UART3_RX_PIN            PB11
+ //#define UART3_TX_PIN            PB10
 
  #define USE_UART4
  #define UART4_RX_PIN            PC11
@@ -150,8 +150,8 @@
 
  #define USE_I2C
  #define USE_I2C_DEVICE_2
- #define I2C2_SCL                NONE //PB10, UART3_TX
- #define I2C2_SDA                NONE //PB11, UART3_RX
+ #define I2C2_SCL                PB10//, UART3_TX
+ #define I2C2_SDA                PB11//, UART3_RX
  #define I2C_DEVICE              (I2CDEV_2)
 
  #define USE_TARGET_CONFIG
