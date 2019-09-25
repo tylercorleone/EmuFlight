@@ -99,6 +99,9 @@ PG_RESET_TEMPLATE(volLimitationConfig_t, volLimitationConfig,
 /*********** Global Variables **************/
 static bool newGPSData = false;
 volLimData_s volLimData;
+static float commandedLimThrottle;
+static int32_t altitudeLimIntegral;
+static int32_t throttleItermLim;
 int16_t safeHold_angle[2] = { 0, 0 };    // it's the angles that must be applied for Safe hold state
 
 /*********** Static functions **************/
@@ -154,11 +157,12 @@ void volLimitation_SensorUpdate(void)
     }
 }
 
-float volLimitation_AltitudeLim(float throttle)
+void volLimitation_AltitudeLim(void)
 {
-    int32_t altitudeLimIntegral = 0;
+    altitudeLimIntegral = 0;
     static int32_t altitudeErrorLimSum = 0;
-    int32_t throttleItermLim = 0, throttleDtermLim = 0, throttlePtermLim = 0;
+    throttleItermLim = 0;
+    int32_t throttleDtermLim = 0, throttlePtermLim = 0;
     static float volLimThrottle;
     float ct = cos(DECIDEGREES_TO_RADIANS(attitude.values.pitch / 10))* cos(DECIDEGREES_TO_RADIANS(attitude.values.roll / 10));
     ct = constrainf(ct,0.5f,1.0f); // Inclination coefficient limitation
@@ -205,12 +209,24 @@ float volLimitation_AltitudeLim(float throttle)
     int32_t hoverAdjustment = (volLimitationConfig()->throttleHover - 1000) / ct;
 
     volLimThrottle = constrainf(1000 + altitudeLimAdjustment + hoverAdjustment, volLimitationConfig()->throttleMin, volLimitationConfig()->throttleMax);
+    commandedLimThrottle = scaleRangef(volLimThrottle, MAX(rxConfig()->mincheck, PWM_RANGE_MIN), PWM_RANGE_MAX, 0.0f, 1.0f);
 
+
+    /************ ALTHOLD MODE activation ***************/
+      if (FLIGHT_MODE(ALTHOLD_MODE)) {
+      commandedLimThrottle = volLimitation_AltitudeHold(1);
+      } else {
+       volLimitation_AltitudeHold(0);
+     }
+     /****************************************************/
+}
+
+
+float setAltitudeLim(float throttle)
+  {
     // Limitation applies only when altitude limit is reached
-    float commandedLimThrottle;
     if (volLimData.altitudeLimDemanded == 1) {
-        commandedLimThrottle = scaleRangef(volLimThrottle, MAX(rxConfig()->mincheck, PWM_RANGE_MIN), PWM_RANGE_MAX, 0.0f, 1.0f);
-        commandedLimThrottle = constrainf(throttle,0.0f,commandedLimThrottle);
+          commandedLimThrottle = constrainf(throttle,0.0f,commandedLimThrottle);
 
         // Reset I if the pilot has decreased the throttle to go down
         if(throttle ==  commandedLimThrottle) {
@@ -221,8 +237,10 @@ float volLimitation_AltitudeLim(float throttle)
         commandedLimThrottle = throttle;
     }
 
+
     return commandedLimThrottle;
-}
+ }
+
 
 float volLimitation_AltitudeHold(uint8_t altholdStatus)
 {

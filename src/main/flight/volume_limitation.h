@@ -84,9 +84,10 @@ typedef struct {
 void volLimitation_init(void);
 void volLimitation_NewGpsData(void);
 void volLimitation_SensorUpdate(void);
-float volLimitation_AltitudeLim(float throttle);
 float volLimitation_AltitudeHold(uint8_t altholdStatus);
 uint8_t volLimitation_DistanceLimStatus(void);
+void volLimitation_AltitudeLim(void);
+ float setAltitudeLim(float throttle);
 volLimAlert_s getVolLimAlert(void);
 float gpsHoldGetYawRate(void);
 bool gpsNeededForVolLim(void);

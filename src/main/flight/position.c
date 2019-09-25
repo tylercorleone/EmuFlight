@@ -28,7 +28,7 @@
 #include "common/maths.h"
 
 #include "fc/runtime_config.h"
-
+#include "flight/volume_limitation.h"
 #include "flight/position.h"
 #include "flight/imu.h"
 #include "flight/pid.h"
@@ -100,12 +100,14 @@ if (sensors(SENSOR_GPS) && STATE(GPS_FIX)) {
 
     if (haveGpsAlt && haveBaroAlt) {
         estimatedAltitude = gpsAlt * gpsTrust + baroAlt * (1 - gpsTrust);
-    }    else if (haveBaroAlt) {
+    }else if (haveBaroAlt) {
           estimatedAltitude = baroAlt;
       }else if (haveGpsAlt) {
         estimatedAltitude = gpsAlt;
     }
 
+    // Calculate throttle limitation with the updated altitude
+    volLimitation_AltitudeLim();
 
     DEBUG_SET(DEBUG_ALTITUDE, 0, (int32_t)(100 * gpsTrust));
     DEBUG_SET(DEBUG_ALTITUDE, 1, baroAlt);

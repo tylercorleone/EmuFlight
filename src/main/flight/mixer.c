@@ -827,13 +827,15 @@ FAST_CODE_NOINLINE void mixTable(timeUs_t currentTimeUs, uint8_t vbatPidCompensa
 #endif
 #if defined(USE_VOLUME_LIMITATION) && defined(USE_GPS)
 	    // Altitude limitation
-	    throttle = volLimitation_AltitudeLim(throttle);
+      // mod to reduce CPU usage
+      throttle = setAltitudeLim(throttle);
+	   //throttle = volLimitation_AltitudeLim(throttle);
 	    /************ ALTHOLD MODE activation ***************/
-	    if (FLIGHT_MODE(ALTHOLD_MODE)) {
-	        throttle = volLimitation_AltitudeHold(1);
-	    } else {
-	        volLimitation_AltitudeHold(0);
-	    }
+	  //  if (FLIGHT_MODE(ALTHOLD_MODE)) {
+	   //     throttle = volLimitation_AltitudeHold(1);
+	  //  } else {
+	   //     volLimitation_AltitudeHold(0);
+	   // }
 	    /****************************************************/
 #endif
 

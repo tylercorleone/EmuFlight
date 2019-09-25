@@ -148,11 +148,28 @@
  #define SPI3_MISO_PIN           PB4
  #define SPI3_MOSI_PIN           PB5
 
+//*************** Baro ****************************/
  #define USE_I2C
  #define USE_I2C_DEVICE_2
- #define I2C2_SCL                PB10//, UART3_TX
- #define I2C2_SDA                PB11//, UART3_RX
+ #define I2C2_SCL                PB10
+ #define I2C2_SDA                PB11
  #define I2C_DEVICE              (I2CDEV_2)
+
+ #define BARO_I2C_INSTANCE       (I2CDEV_2)
+ #define USE_BARO
+ #define USE_BARO_BMP280
+ #define USE_BARO_MS5611
+
+ //*********** Magnetometer / Compass *************
+ #define MAG_I2C_INSTANCE       (I2CDEV_2)
+ #define USE_MAG
+ #define USE_MAG_HMC5883
+ #define MAG_HMC5883_ALIGN CW270_DEG_FLIP
+ #define USE_MAG_QMC5883
+ #define MAG_QMC5883_ALIGN CW270_DEG_FLIP
+
+
+
 
  #define USE_TARGET_CONFIG
  #define ENABLE_BLACKBOX_LOGGING_ON_SPIFLASH_BY_DEFAULT
