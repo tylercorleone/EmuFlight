@@ -433,9 +433,6 @@ static const struct {
 #ifdef USE_MAG
     {MAG_MODE,      LED_MODE_MAG},
 #endif
-#ifdef USE_BARO
-    {BARO_MODE,     LED_MODE_BARO},
-#endif
     {HORIZON_MODE,  LED_MODE_HORIZON},
     {ANGLE_MODE,    LED_MODE_ANGLE},
     {0,             LED_MODE_ORIENTATION},

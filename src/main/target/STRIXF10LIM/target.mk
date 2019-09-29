@@ -3,8 +3,4 @@ F7X2RE_TARGETS  += $(TARGET)
 
  TARGET_SRC = drivers/dma_spi_hal.c \
               drivers/accgyro/accgyro_imuf9001.c \
-							drivers/barometer/barometer_bmp280.c \
-	            drivers/barometer/barometer_ms5611.c \
-	            drivers/compass/compass_hmc5883l.c \
-	            drivers/compass/compass_qmc5883l.c \
               drivers/max7456.c

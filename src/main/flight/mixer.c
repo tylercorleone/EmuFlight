@@ -828,7 +828,7 @@ FAST_CODE_NOINLINE void mixTable(timeUs_t currentTimeUs, uint8_t vbatPidCompensa
 #if defined(USE_VOLUME_LIMITATION) && defined(USE_GPS)
 	    // Altitude limitation
       // mod to reduce CPU usage
-      throttle = setAltitudeLim(throttle);
+     throttle = setAltitudeLim(throttle);
 	   //throttle = volLimitation_AltitudeLim(throttle);
 	    /************ ALTHOLD MODE activation ***************/
 	  //  if (FLIGHT_MODE(ALTHOLD_MODE)) {
