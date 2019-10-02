@@ -23,11 +23,11 @@
 
 #define LED0_PIN                PB7
 
+#define USE_VOLUME_LIMITATION
+
 #define USE_BEEPER
 #define BEEPER_PIN                  PC15
 #define BEEPER_INVERTED
-
-#define USE_VOLUME_LIMITATION
 
 #define USE_GYRO
 #define USE_ACC
@@ -75,8 +75,8 @@
 #define UART2_TX_PIN            PA2
 
 #define USE_UART3
-#define UART3_RX_PIN            NONE
-#define UART3_TX_PIN            NONE
+#define UART3_RX_PIN            PB11
+#define UART3_TX_PIN            PB10
 
 #define USE_UART4
 #define UART4_RX_PIN            PC11
@@ -156,15 +156,9 @@
 
 #define USE_I2C
 #define USE_I2C_DEVICE_2
-#define USE_I2C_PULLUP
-#define I2C2_SCL                PB10 // PB10, UART3_TX
-#define I2C2_SDA                PB11 // PB11, UART3_RX
+#define I2C2_SCL                NONE // PB10, UART3_TX
+#define I2C2_SDA                NONE // PB11, UART3_RX
 #define I2C_DEVICE              (I2CDEV_2)
-
-#define BARO_I2C_INSTANCE       (I2CDEV_2)
-#define USE_BARO
-#define USE_BARO_BMP280
-#define USE_BARO_MS5611
 
 #define USE_TARGET_CONFIG
 #define ENABLE_BLACKBOX_LOGGING_ON_SPIFLASH_BY_DEFAULT
