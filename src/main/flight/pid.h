@@ -64,6 +64,11 @@ typedef enum {
 } pidStabilisationState_e;
 
 typedef enum {
+    SAFE_IDLE_DISABLED = 0,
+    SAFE_IDLE_ENABLED
+} safeIdleState_e;
+
+typedef enum {
     PID_CRASH_RECOVERY_OFF = 0,
     PID_CRASH_RECOVERY_ON,
     PID_CRASH_RECOVERY_BEEP

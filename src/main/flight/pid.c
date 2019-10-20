@@ -74,6 +74,8 @@ static FAST_RAM_ZERO_INIT bool pidStabilisationEnabled;
 
 static FAST_RAM_ZERO_INIT bool inCrashRecoveryMode = false;
 
+static FAST_RAM_ZERO_INIT bool safeIdleEnabled;
+
 static FAST_RAM_ZERO_INIT float dT;
 static FAST_RAM_ZERO_INIT float pidFrequency;
 
@@ -160,6 +162,7 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .itermWindupPointPercent = 50,
         .vbatPidCompensation = 0,
         .pidAtMinThrottle = PID_STABILISATION_ON,
+        .safeIdleEnabled = SAFE_IDLE_ENABLED,
         .levelAngleLimit = 55,
         .feedForwardTransition = 0,
         .setPointPTransition = 110,
@@ -852,17 +855,15 @@ static FAST_RAM_ZERO_INIT timeUs_t crashDetectedAtUs;
 #define SIGN(x) ((x > 0.0f) - (x < 0.0f))
 
 //EMUPID addition to the pid controller
-FAST_CODE float EMUPID(float emupid, uint8_t fo_term)
+FAST_CODE float EMUPID(float emupid, uint8_t emu_term)
 {
   float absEmupid = fabs(emupid);
   float absEmupidSquare = absEmupid * absEmupid;
   float absEmupidCube = absEmupidSquare * absEmupid;
   float absEmupidQuad = absEmupidCube * absEmupid;
   float absEmupidQuint = absEmupidQuad * absEmupid;
-  if (emupid < 1) {
-    emupid = emupid;
-  } else {
-  switch (fo_term) {
+  if (absEmupid > 1) {
+  switch (emu_term) {
     case 1:
     emupid = (((1.777 * absEmupidQuint) + (123.9 * absEmupidQuad) + (873.4 * absEmupidCube) + (909.9 * absEmupidSquare) + (137.7 * absEmupid) + 1.914) /
     ((absEmupidQuint) + (90.81 * absEmupidQuad) + (785.4 * absEmupidCube) + (985 * absEmupidSquare) + (182.9  * absEmupid) + 3.335)) * (absEmupid / emupid);
@@ -899,7 +900,7 @@ FAST_CODE float EMUPID(float emupid, uint8_t fo_term)
     emupid = (((1092 * absEmupidQuint) + (72700  * absEmupidQuad) + (642000 * absEmupidCube) + (881700 * absEmupidSquare) + (156000 * absEmupid) + 489.3) /
     ((absEmupidQuint) + (1852 * absEmupidQuad) + (98540 * absEmupidCube) + (720500 * absEmupidSquare) + (819500 * absEmupid) + 113800)) * (absEmupid / emupid);
     break;
-    case 10:
+    default:
     emupid = emupid;
     break;
   }
@@ -1234,6 +1235,25 @@ void pidController(const pidProfile_t *pidProfile, const rollAndPitchTrims_t *an
             pidData[axis].F = 0;
 
             pidData[axis].Sum = 0;
+        }
+
+        uint8_t safeIdle;
+
+        if (ARMED = false) {
+            safeIdle = true;
+          } else {
+            if (safeIdle = true && rcData[THROTTLE] < 1070 && safeIdleEnabled = SAFE_IDLE_ENABLED) {
+            pidData[axis].P = 0;
+            pidData[axis].I = 0;
+            pidData[axis].D = 0;
+            pidData[axis].F = 0;
+
+            pidData[axis].Sum = 0;
+            dshot_idle_value = 3.0;
+            min_throttle = 1035;
+          } else {
+            safeIdle = false;
+          }
         }
         // calculating the PID sum and TPA and SPA
         const float pidSum = (pidData[axis].P * getThrottlePAttenuation() * setPointPAntenuation) + (pidData[axis].I * getThrottleIAttenuation() * setPointIAntenuation) + (pidData[axis].D * getThrottleDAttenuation() * setPointDAntenuation) + pidData[axis].F;
