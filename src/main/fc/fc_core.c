@@ -260,14 +260,14 @@ void updateArmingStatus(void)
         }
 #endif
 
-#ifdef USE_VOLUME_LIMITATION
-        // Arming is forbidden before GPS FIX
-        if ((STATE(GPS_FIX) || ARMING_FLAG(WAS_EVER_ARMED)) || !gpsNeededForVolLim()) {
+
+        // Arming is forbidden before GPS FIX  and healthy sensors
+        if ((STATE(GPS_FIX) || ARMING_FLAG(WAS_EVER_ARMED)) || !gpsNeededForVolLim() || !volLimSanityCheck()) {
             unsetArmingDisabled(ARMING_DISABLED_GPS);
         } else {
             setArmingDisabled(ARMING_DISABLED_GPS);
         }
-#endif
+
 
         if (IS_RC_MODE_ACTIVE(BOXPARALYZE)) {
             setArmingDisabled(ARMING_DISABLED_PARALYZE);
@@ -769,7 +769,7 @@ bool processRx(timeUs_t currentTimeUs)
     }
 
 
-    #ifdef USE_VOLUME_LIMITATION
+
     	    if (volLimitation_DistanceLimStatus() && sensors(SENSOR_ACC) && volLimSanityCheck()) {
     	        // bumpless transfer to Level mode
     	        canUseHorizonMode = false;
@@ -811,7 +811,7 @@ bool processRx(timeUs_t currentTimeUs)
     	        DISABLE_FLIGHT_MODE(SAFE_HOLD_MODE);
     	        DISABLE_FLIGHT_MODE(ALTHOLD_MODE);
     	    }
-    	#endif
+    	
 
 
 #ifdef USE_GPS_RESCUE

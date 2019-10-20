@@ -800,7 +800,7 @@ const clivalue_t valueTable[] = {
     { "gps_rescue_min_sats",        VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0, 50 }, PG_GPS_RESCUE, offsetof(gpsRescueConfig_t, minSats) },
 #endif
 
-#ifdef USE_VOLUME_LIMITATION
+
     // PG_VOLUME_LIMITATION
     { "vol_lim_altitude",           VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_VOLUME_LIMITATION, offsetof(volLimitationConfig_t, altitudeLimitation) },
     { "vol_lim_distance",           VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_VOLUME_LIMITATION, offsetof(volLimitationConfig_t, distanceLimitation) },
@@ -825,7 +825,7 @@ const clivalue_t valueTable[] = {
     { "vol_lim_min_safe_altitude",  VAR_UINT8  | MASTER_VALUE, .config.minmax = { 10, 100 }, PG_VOLUME_LIMITATION, offsetof(volLimitationConfig_t, minSafeAltitude) },
     { "vol_lim_min_sats",           VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0, 50 }, PG_VOLUME_LIMITATION, offsetof(volLimitationConfig_t, minSats) },
     { "vol_lim_arming_without_gps", VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_VOLUME_LIMITATION, offsetof(volLimitationConfig_t, armingWithoutGps) },
-#endif
+
 #endif
 
     { "deadband",                   VAR_UINT8  | MASTER_VALUE, .config.minmax = { 0, 32 }, PG_RC_CONTROLS_CONFIG, offsetof(rcControlsConfig_t, deadband) },

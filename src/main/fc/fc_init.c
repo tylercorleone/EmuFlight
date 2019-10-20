@@ -620,9 +620,9 @@ void init(void)
     }
 #endif
 
-#ifdef USE_VOLUME_LIMITATION
+
 	    volLimitation_init();
-	#endif
+
 
 #ifdef USE_LED_STRIP
     ledStripInit();

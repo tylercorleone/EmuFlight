@@ -797,9 +797,12 @@ static bool osdDrawSingleElement(uint8_t item)
                 osdFormatMessage(buff, OSD_FORMAT_MESSAGE_BUFFER_SIZE, " LAND NOW");
                 break;
             }
-            #ifdef USE_VOLUME_LIMITATION
+
             // Volume limitation OSD warnings
-              if(getVolLimAlert().sensorFailure == 1) {
+            if (getVolLimAlert().distance == 2) {
+                  osdFormatMessage(buff, OSD_FORMAT_MESSAGE_BUFFER_SIZE, "NO VOLUME LIMITATION");
+                  break;
+              }else if(getVolLimAlert().sensorFailure == 1) {
                   osdFormatMessage(buff, OSD_FORMAT_MESSAGE_BUFFER_SIZE, "SENSOR FAILURE");
                   break;
               } else if(getVolLimAlert().altitude == 1) {
@@ -812,7 +815,7 @@ static bool osdDrawSingleElement(uint8_t item)
                 osdFormatMessage(buff, OSD_FORMAT_MESSAGE_BUFFER_SIZE, "SAFEHOLD MODE");
                 break;
               }
-            #endif
+
 
             // Show warning if in HEADFREE flight mode
             if (FLIGHT_MODE(HEADFREE_MODE)) {

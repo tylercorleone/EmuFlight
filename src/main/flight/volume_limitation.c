@@ -21,7 +21,7 @@
 
 #include "platform.h"
 
-#ifdef USE_VOLUME_LIMITATION
+
 
 #include "build/debug.h"
 
@@ -49,7 +49,7 @@
 
 #include "sensors/acceleration.h"
 #include "sensors/compass.h"
-
+#include "sensors/barometer.h"
 #include "volume_limitation.h"
 
 #define ALTHOLD_CT_FAC      1.2
@@ -71,9 +71,9 @@
 PG_REGISTER_WITH_RESET_TEMPLATE(volLimitationConfig_t, volLimitationConfig, PG_VOLUME_LIMITATION, 0);
 
 PG_RESET_TEMPLATE(volLimitationConfig_t, volLimitationConfig,
-    .altitudeLimitation = true,
-    .distanceLimitation = true,
-    .landingAllowed = true,
+    .altitudeLimitation = false,
+    .distanceLimitation = false,
+    .landingAllowed = false,
     .maxAltitude = 100,
     .alertAltitudeBeforeMax = 20,
     .maxDistance = 1000,
@@ -224,6 +224,11 @@ void volLimitation_AltitudeLim(void)
 
 float setAltitudeLim(float throttle)
   {
+    if (!volLimitationConfig()->altitudeLimitation) {
+            volLimData.alert.distance = 2;
+            return throttle;
+        }
+
     // Limitation applies only when altitude limit is reached
     if (volLimData.altitudeLimDemanded == 1) {
           commandedLimThrottle = constrainf(throttle,0.0f,commandedLimThrottle);
@@ -320,6 +325,11 @@ uint8_t volLimitation_DistanceLimStatus(void)
     int32_t headingError = 0;
     uint8_t safePointReached = 0;
 
+    if (!volLimitationConfig()->distanceLimitation) {
+        volLimData.alert.distance = 2;
+        return 0;
+    }
+
     float distanceError = (float)(volLimitationConfig()->maxDistance) - (float)(volLimData.sensor.distanceToHome / 100); // in meters
 
     if (IS_RC_MODE_ACTIVE(BOXANGLE)) {
@@ -344,7 +354,7 @@ uint8_t volLimitation_DistanceLimStatus(void)
             volLimData.safeModeDemanded = 0;
 
             // Activate Stab mode, althold and poshold if max distance reached and limitation activated
-            if((distanceError < 0) && volLimitationConfig()->distanceLimitation && volLimSanityCheck()) {
+            if((distanceError < 0)  && volLimSanityCheck()) {
                 volLimData.safeModeDemanded = 1;
                 isStabModeSwitched = 0;
                 volLimData.safeHoldState = SAFEHOLD_INIT;
@@ -547,7 +557,7 @@ static bool updateHoldRollPitchAngle(int32_t heading, int32_t safeDirection)
 
 bool volLimSanityCheck(void)
 {
-    if (!gpsIsHealthy() || !STATE(GPS_FIX) || !compassIsHealthyForVolumeLimitation()) {
+    if (!gpsIsHealthy() || !STATE(GPS_FIX) || !compassIsHealthyForVolumeLimitation() || !isBaroReady()){
         volLimData.alert.sensorFailure = 1;
         return false;
     } else {
@@ -573,5 +583,3 @@ bool gpsNeededForVolLim(void)
     gpsNeededForArming = (!volLimitationConfig()->armingWithoutGps) | (volLimitationConfig()->distanceLimitation);
     return gpsNeededForArming;
 }
-
-#endif // USE_VOLUME_LIMITATION

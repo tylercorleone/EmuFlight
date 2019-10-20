@@ -106,13 +106,19 @@ if (sensors(SENSOR_GPS) && STATE(GPS_FIX)) {
         estimatedAltitude = gpsAlt;
     }
 
+#ifdef USE_VOLUME_LIMITATION
+if (volLimitationConfig()->altitudeLimitation) {
     // Calculate throttle limitation with the updated altitude
     volLimitation_AltitudeLim();
 
     DEBUG_SET(DEBUG_ALTITUDE, 0, (int32_t)(100 * gpsTrust));
     DEBUG_SET(DEBUG_ALTITUDE, 1, baroAlt);
     DEBUG_SET(DEBUG_ALTITUDE, 2, gpsAlt);
+
 }
+    #endif
+}
+
 
 bool isAltitudeOffset(void)
 {

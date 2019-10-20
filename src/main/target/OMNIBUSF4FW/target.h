@@ -26,6 +26,7 @@
 // OMNIBUSF4FW1/OFW1 for Public Test Version
 // (Not a valid target, .mk file must be supplied by a user)
 // OMNIBUSF4V6
+#define USE_VOLUME_LIMITATION
 
 #if defined(OMNIBUSF4V6)
 #define TARGET_BOARD_IDENTIFIER "OBV6"
