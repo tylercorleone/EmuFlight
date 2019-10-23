@@ -55,6 +55,7 @@
 #include "sensors/gyro.h"
 #include "sensors/acceleration.h"
 
+#include "rx/rx.h"
 
 extern float r_weight;
 
@@ -73,8 +74,6 @@ FAST_RAM_ZERO_INIT pidAxisData_t pidData[XYZ_AXIS_COUNT];
 static FAST_RAM_ZERO_INIT bool pidStabilisationEnabled;
 
 static FAST_RAM_ZERO_INIT bool inCrashRecoveryMode = false;
-
-static FAST_RAM_ZERO_INIT bool safeIdleEnabled;
 
 static FAST_RAM_ZERO_INIT float dT;
 static FAST_RAM_ZERO_INIT float pidFrequency;
@@ -120,7 +119,8 @@ PG_RESET_TEMPLATE(pidConfig_t, pidConfig,
 );
 #else
 PG_RESET_TEMPLATE(pidConfig_t, pidConfig,
-    .pid_process_denom = PID_PROCESS_DENOM_DEFAULT
+    .pid_process_denom = PID_PROCESS_DENOM_DEFAULT,
+    .safe_idle_enabled = true
 );
 #endif
 
@@ -1239,18 +1239,16 @@ void pidController(const pidProfile_t *pidProfile, const rollAndPitchTrims_t *an
 
         uint8_t safeIdle;
 
-        if (ARMED = false) {
+        if (ARMING_FLAG(ARMED)) {
             safeIdle = true;
           } else {
-            if (safeIdle = true && rcData[THROTTLE] < 1070 && safeIdleEnabled = SAFE_IDLE_ENABLED) {
+            if (safeIdle == true && rcData[THROTTLE] < 1070 && pidConfig()->safe_idle_enabled) {
             pidData[axis].P = 0;
             pidData[axis].I = 0;
             pidData[axis].D = 0;
             pidData[axis].F = 0;
 
             pidData[axis].Sum = 0;
-            dshot_idle_value = 3.0;
-            min_throttle = 1035;
           } else {
             safeIdle = false;
           }

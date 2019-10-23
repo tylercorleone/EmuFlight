@@ -159,8 +159,8 @@ typedef struct pidProfile_s {
     uint8_t abs_control_error_limit;        // Limit to the accumulated error
     uint8_t use_integrated_yaw;             // Selects whether the yaw pidsum should integrated
     uint8_t integrated_yaw_relax;           // Specifies how much integrated yaw should be reduced to offset the drag based yaw component
-    uint8_t emu_dterm;                       // fractional order approximation for dterm
-    uint8_t emu_iterm;                       // fractional order approximation for iterm
+    uint8_t emu_dterm;                      // noise reducing multiplierm
+    uint8_t emu_iterm;                      // noise reducing multiplier
 } pidProfile_t;
 
 #ifndef USE_OSD_SLAVE
@@ -172,6 +172,7 @@ typedef struct pidConfig_s {
     uint8_t runaway_takeoff_prevention;          // off, on - enables pidsum runaway disarm logic
     uint16_t runaway_takeoff_deactivate_delay;   // delay in ms for "in-flight" conditions before deactivation (successful flight)
     uint8_t runaway_takeoff_deactivate_throttle; // minimum throttle percent required during deactivation phase
+    uint8_t safe_idle_enabled;                   // off, on - enables the safe idle logic
 } pidConfig_t;
 
 PG_DECLARE(pidConfig_t, pidConfig);
