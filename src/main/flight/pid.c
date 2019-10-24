@@ -200,7 +200,7 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .antiGravityMode = ANTI_GRAVITY_SMOOTH,
         .use_integrated_yaw = false,
         .integrated_yaw_relax = 200,
-        launchControlMode = LAUNCH_CONTROL_MODE_NORMAL,
+        .launchControlMode = LAUNCH_CONTROL_MODE_NORMAL,
         .launchControlThrottlePercent = 20,
         .launchControlAngleLimit = 0,
         .launchControlGain = 40,
