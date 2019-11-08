@@ -4,7 +4,7 @@ ARM_SDK_URL_BASE  := https://developer.arm.com/-/media/Files/downloads/gnu-rm/9-
 
 # source: https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads
 ifdef LINUX
-  ARM_SDK_URL  := $(ARM_SDK_URL_BASE)-linux.tar.bz2
+  ARM_SDK_URL  := $(ARM_SDK_URL_BASE)-x86_64-linux.tar.bz2
 endif
 
 ifdef MACOSX
