@@ -55,7 +55,7 @@
 
 #define USE_EXTI
 #define USE_GYRO_EXTI
-#define MPU6000_EXTI_PIN                 PC3
+#define MPU_INT_EXTI_PIN                 PC3
 #define USE_MPU_DATA_READY_SIGNAL
 
 #define USE_GYRO_MPU6000
