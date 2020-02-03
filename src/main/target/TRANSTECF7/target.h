@@ -50,20 +50,17 @@
 #define USE_GYRO
 #define USE_ACC
 
-#define SPI1_NSS_PIN
-#define MPU6000_CS_PIN          SPI1_NSS_PIN
-#define MPU6000_SPI_INSTANCE    SPI1
-#define GYRO_1_CS_PIN            MPU6000_CS_PIN
-#define GYRO_1_SPI_INSTANCE      MPU6000_SPI_INSTANCE
+#define MPU6000_CS_PIN                       PA4
+#define MPU6000_SPI_INSTANCE                 SPI1
 
 #define USE_EXTI
 #define USE_GYRO_EXTI
-#define GYRO_1_EXTI_PIN                 PC3
+#define MPU6000_EXTI_PIN                 PC3
 #define USE_MPU_DATA_READY_SIGNAL
 
 #define USE_GYRO_MPU6000
 #define USE_GYRO_SPI_MPU6000
-#define GYRO_1_ALIGN                    CW180_DEG_FLIP
+#define MPU6000_ALIGN                    CW180_DEG_FLIP
 
 #define USE_ACC_MPU6000
 #define USE_ACC_SPI_MPU6000
