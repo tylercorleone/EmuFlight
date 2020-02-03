@@ -19,8 +19,8 @@
  */
 
 #pragma once
-#define TARGET_BOARD_IDENTIFIER "CLR7"
-#define USBD_PRODUCT_STRING "CLRACINGF7"
+#define TARGET_BOARD_IDENTIFIER "HENA"
+#define USBD_PRODUCT_STRING "TALONF7V2"
 
 #define ENABLE_DSHOT_DMAR       true
 
@@ -139,9 +139,9 @@
 #define CURRENT_METER_SCALE_DEFAULT 250                     // 3.3/120A  = 25mv/A
 
 // real pit
-//#define USE_PINIO               //FOR TALONF7V2
-//#define PINIO1_PIN              PA14  // VTX power switcher
-//#define USE_PINIOBOX            //FOR TALONF7V2
+#define USE_PINIO               //FOR TALONF7V2
+#define PINIO1_PIN              PA14  // VTX power switcher
+#define USE_PINIOBOX            //FOR TALONF7V2
 
 #define BINDPLUG_PIN            PB2
 #define DEFAULT_RX_FEATURE      FEATURE_RX_SERIAL
