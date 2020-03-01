@@ -466,6 +466,23 @@ float calculateVbatPidCompensation(void) {
     return batteryScaler;
 }
 
+float calculateThrottleVbatCompensationFactor(uint16_t refVoltage)
+{
+    float factor =  1.0f;
+    if (batteryConfig()->voltageMeterSource != VOLTAGE_METER_NONE && batteryCellCount > 0) {
+        float vbat = (float) voltageMeter.filtered / batteryCellCount;
+        if (vbat > batteryConfig()->vbatmincellvoltage) {
+            factor = refVoltage / vbat;
+            factor *= factor;
+            if (vbat < batteryConfig()->vbatwarningcellvoltage && batteryConfig()->vbatwarningcellvoltage > batteryConfig()->vbatmincellvoltage) {
+                // vmin - vwarn range: linearly removing the factor
+                factor = scaleRangef(vbat, batteryConfig()->vbatmincellvoltage, batteryConfig()->vbatwarningcellvoltage, 1.0f, factor);
+            }
+        }
+    }
+    return factor;
+}
+
 uint8_t calculateBatteryPercentageRemaining(void)
 {
     uint8_t batteryPercentage = 0;

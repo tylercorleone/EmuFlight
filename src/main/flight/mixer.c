@@ -803,6 +803,26 @@ float applyThrottleLimit(float throttle)
     return throttle;
 }
 
+static float applyThrottleVbatCompensation(float throttle)
+{
+    if (currentControlRateProfile->throttle_vbat_comp_level) {
+        float compensationFactor = calculateThrottleVbatCompensationFactor(currentControlRateProfile->throttle_vbat_comp_ref);
+
+        switch (currentControlRateProfile->throttle_vbat_comp_type) {
+            case THROTTLE_VBAT_COMP_TYPE_BOOST_ONLY:
+                compensationFactor = MAX(compensationFactor, 1.0f);
+                break;
+            case THROTTLE_VBAT_COMP_TYPE_LIMIT_ONLY:
+                compensationFactor = MIN(compensationFactor, 1.0f);
+                break;
+        };
+
+        throttle *= scaleRangef(currentControlRateProfile->throttle_vbat_comp_level, 0.0f, 100.0f, 1.0f, compensationFactor);
+    }
+
+    return throttle;
+}
+
 FAST_CODE_NOINLINE void mixTable(timeUs_t currentTimeUs, uint8_t vbatPidCompensation)
 {
     if (isFlipOverAfterCrashMode()) {
@@ -836,6 +856,11 @@ uint16_t yawPidSumLimit = currentPidProfile->pidSumLimitYaw;
 
     // Calculate voltage compensation
     const float vbatCompensationFactor = vbatPidCompensation ? calculateVbatPidCompensation() : 1.0f;
+
+    // Apply the voltage dependent throttle compensation based on throttle_vbat_comp_type
+    if (currentControlRateProfile->throttle_vbat_comp_type != THROTTLE_VBAT_COMP_TYPE_OFF) {
+        throttle = applyThrottleVbatCompensation(throttle);
+    }
 
     // Apply the throttle_limit_percent to scale or limit the throttle based on throttle_limit_type
     if (currentControlRateProfile->throttle_limit_type != THROTTLE_LIMIT_TYPE_OFF) {

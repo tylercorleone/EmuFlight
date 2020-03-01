@@ -37,6 +37,14 @@ typedef enum {
     THROTTLE_LIMIT_TYPE_CLIP,
 } throttleLimitType_e;
 
+typedef enum {
+    THROTTLE_VBAT_COMP_TYPE_OFF = 0,
+    THROTTLE_VBAT_COMP_TYPE_BOOST_ONLY,
+    THROTTLE_VBAT_COMP_TYPE_LIMIT_ONLY,
+    THROTTLE_VBAT_COMP_TYPE_BOOST_AND_LIMIT,
+    THROTTLE_VBAT_COMP_TYPE_COUNT   // must be the last entry
+} throttleVbatCompType_e;
+
 typedef struct controlRateConfig_s {
     uint8_t thrMid8;
     uint8_t thrExpo8;
@@ -50,6 +58,9 @@ typedef struct controlRateConfig_s {
     uint16_t tpa_breakpoint;                // Breakpoint where TPA is activated
     uint8_t throttle_limit_type;            // Sets the throttle limiting type - off, scale or clip
     uint8_t throttle_limit_percent;         // Sets the maximum pilot commanded throttle limit
+    uint8_t throttle_vbat_comp_type;        // Sets the voltage dependent throttle compensation type - off, boost only, limit only or boost and limit
+    uint8_t throttle_vbat_comp_level;       // Sets the level of voltage dependent throttle compensation
+    uint8_t throttle_vbat_comp_ref;         // Sets the voltage reference to which calculate the voltage dependent throttle compensation
 
 } controlRateConfig_t;
 

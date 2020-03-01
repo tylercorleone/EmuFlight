@@ -111,7 +111,8 @@ typedef enum {
     TABLE_RC_SMOOTHING_INPUT_TYPE,
     TABLE_RC_SMOOTHING_DERIVATIVE_TYPE,
 #endif // USE_RC_SMOOTHING_FILTER
-    LOOKUP_TABLE_COUNT
+    LOOKUP_TABLE_COUNT,
+    TABLE_THROTTLE_VBAT_COMP_TYPE
 } lookupTableIndex_e;
 
 typedef struct lookupTableEntry_s {

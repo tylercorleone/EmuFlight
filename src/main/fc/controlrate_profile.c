@@ -59,7 +59,10 @@ void pgResetFn_controlRateProfiles(controlRateConfig_t *controlRateConfig)
             .rates[FD_PITCH] = 70,
             .rates[FD_YAW] = 70,
             .throttle_limit_type = THROTTLE_LIMIT_TYPE_OFF,
-            .throttle_limit_percent = 100
+            .throttle_limit_percent = 100,
+            .throttle_vbat_comp_type = THROTTLE_VBAT_COMP_TYPE_OFF,
+            .throttle_vbat_comp_level = 75,
+            .throttle_vbat_comp_ref = 37
         );
     }
 }
