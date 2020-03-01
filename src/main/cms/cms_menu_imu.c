@@ -80,8 +80,8 @@ static const char * const cms_offOnLabels[] = {
     "OFF", "ON"
 };
 
-static const char * const osdTableThrottleVbatCopmpType[] = {
-    "OFF", "BOOST", "LIMIT", "ALL"
+static const char * const cms_throttleVbatCompTypeLabels[] = {
+    "OFF", "BOOST", "LIMIT", "BOTH"
 };
 
 static long cmsx_menuImu_onEnter(void)
@@ -271,7 +271,7 @@ static OSD_Entry cmsx_menuRateProfileEntries[] =
     { "TPA RATE D",  OME_FLOAT,  NULL, &(OSD_FLOAT_t) { &rateProfile.dynThrD,              0,  250,  1, 10}, 0 },
     { "TPA BREAKPOINT",   OME_UINT16, NULL, &(OSD_UINT16_t){ &rateProfile.tpa_breakpoint,  1000, 2000, 10}, 0 },
 
-    { "THR VBAT COMP TYPE", OME_TAB,   NULL, &(OSD_TAB_t)    { &rateProfile.throttle_vbat_comp_type, THROTTLE_VBAT_COMP_TYPE_COUNT - 1, osdTableThrottleVbatCopmpType}, 0 },
+    { "THR VBAT COMP TYPE", OME_TAB,   NULL, &(OSD_TAB_t)    { &rateProfile.throttle_vbat_comp_type, THROTTLE_VBAT_COMP_TYPE_COUNT - 1, cms_throttleVbatCompTypeLabels}, 0 },
     { "THR VBAT %",         OME_UINT8, NULL, &(OSD_UINT8_t)  { &rateProfile.throttle_vbat_comp_level, 0,  100,  1}, 0 },
     { "THR VBAT REF",       OME_UINT8, NULL, &(OSD_UINT8_t)  { &rateProfile.throttle_vbat_comp_ref, VBAT_CELL_VOTAGE_RANGE_MIN, VBAT_CELL_VOTAGE_RANGE_MAX,  1}, 0 },
 
