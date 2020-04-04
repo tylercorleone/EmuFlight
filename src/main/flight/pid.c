@@ -202,6 +202,7 @@ void resetPidProfile(pidProfile_t *pidProfile)
                  .motor_output_limit = 100,
                  .auto_profile_cell_count = AUTO_PROFILE_CELL_COUNT_STAY,
                  .horizonTransition = 0,
+                 .integral_half_life = 100
                );
 }
 
@@ -829,6 +830,10 @@ static void processIterm(
     }
 }
 
+static float fadeIntegral(float integral, float elapsedSeconds, float halfLifeSeconds) {
+    return integral * powf(0.5f, elapsedSeconds / halfLifeSeconds);
+}
+
 void pidController(const pidProfile_t *pidProfile, const rollAndPitchTrims_t *angleTrim, timeUs_t currentTimeUs)
 {
     const float deltaT = (currentTimeUs - previousTimeUs) * 1e-6f;
@@ -932,7 +937,7 @@ void pidController(const pidProfile_t *pidProfile, const rollAndPitchTrims_t *an
 #endif
 
         const float gyroRate = gyro.gyroADCf[axis];
-        float ITerm = pidData[axis].I;
+        float ITerm = fadeIntegral(pidData[axis].I, deltaT, pidProfile->integral_half_life / 10.0f);
         float itermErrorRate = boostedErrorRate + errorRate;
 
 #ifdef USE_ITERM_RELAX

@@ -159,6 +159,7 @@ typedef struct pidProfile_s {
     uint8_t integrated_yaw_relax;           // Specifies how much integrated yaw should be reduced to offset the drag based yaw component
     uint8_t motor_output_limit;             // Upper limit of the motor output (percent)
     int8_t auto_profile_cell_count;         // Cell count for this profile to be used with if auto PID profile switching is used
+    int8_t integral_half_life;              // Integral half-life in tenths of second
 } pidProfile_t;
 
 #ifndef USE_OSD_SLAVE
