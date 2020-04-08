@@ -102,6 +102,7 @@ float calculateVbatCompensationFactor();
 uint8_t calculateBatteryPercentageRemaining(void);
 bool isBatteryVoltageConfigured(void);
 uint16_t getBatteryVoltage(void);
+uint16_t getLegacyBatteryVoltage(void);
 uint16_t getBatteryVoltageLatest(void);
 uint16_t getBatteryRestingVoltage(void);
 void updateBatterySagCompensationFactor(float);
