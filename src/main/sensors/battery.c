@@ -65,8 +65,8 @@
 uint8_t batteryCellCount; // Note: this can be 0 when no battery is detected or when the battery voltage sensor is missing or disabled.
 uint16_t batteryWarningVoltage;
 uint16_t batteryCriticalVoltage;
-float batterySagCompensationFactor;
-biquadFilter_t batterySagCompensationFactorFilter;
+uint16_t batteryRestingVoltage;
+biquadFilter_t batteryRestingVoltageFilter;
 
 static lowVoltageCutoff_t lowVoltageCutoff;
 //
@@ -364,7 +364,7 @@ void batteryInit(void)
 
     voltageMeterReset(&voltageMeter);
 
-    biquadFilterInitLPF(&batterySagCompensationFactorFilter, GET_BATTERY_LPF_FREQUENCY(batteryConfig()->vbatLpfPeriod), HZ_TO_INTERVAL_US(50));
+    biquadFilterInitLPF(&batteryRestingVoltageFilter, GET_BATTERY_LPF_FREQUENCY(batteryConfig()->vbatLpfPeriod * 2), HZ_TO_INTERVAL_US(50));
 
     switch (batteryConfig()->voltageMeterSource) {
         case VOLTAGE_METER_ESC:
@@ -466,11 +466,11 @@ void batteryUpdateCurrentMeter(timeUs_t currentTimeUs)
     }
 }
 
-float calculateVbatCompensation(uint8_t vbatCompType, uint16_t vbatCompRef)
+float calculateVbatCompensationFactor()
 {
     float factor =  1.0f;
     if (batteryConfig()->voltageMeterSource != VOLTAGE_METER_NONE && batteryCellCount > 0) {
-        float vbat = (float) voltageMeter.filtered / batteryCellCount;
+        float vbat = (float) getBatteryRestingVoltage() / batteryCellCount;
         if (vbat) {
             factor = currentControlRateProfile->vbat_comp_ref / vbat;
             switch (currentControlRateProfile->vbat_comp_type) {
@@ -532,12 +532,12 @@ uint16_t getBatteryVoltageLatest(void)
 
 uint16_t getBatteryRestingVoltage()
 {
-    return voltageMeter.filtered + roundf(batterySagCompensationFactor * batteryConfig()->vbat_max_voltage_sag);
+    return batteryRestingVoltage;
 }
 
-void updateBatterySagCompensationFactor(float factor)
+void updateBatteryRestingVoltage(float normMotorOutput)
 {
-    batterySagCompensationFactor = biquadFilterApply(&batterySagCompensationFactorFilter, factor);
+    batteryRestingVoltage = biquadFilterApply(&batteryRestingVoltageFilter, voltageMeter.unfiltered + roundf(normMotorOutput * batteryConfig()->vbat_max_voltage_sag));
 }
 
 uint8_t getBatteryCellCount(void)
