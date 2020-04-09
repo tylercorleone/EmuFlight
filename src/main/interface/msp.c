@@ -983,8 +983,8 @@ bool mspProcessOutCommand(uint8_t cmdMSP, sbuf_t *dst)
 
         sbufWriteU8(dst, currentControlRateProfile->vbat_comp_type);
         sbufWriteU8(dst, (currentControlRateProfile->vbat_comp_ref + 5) / 10);
-        sbufWriteU8(dst, currentControlRateProfile->thrust_linearization_level);
-        sbufWriteU8(dst, currentControlRateProfile->throttle_linearization);
+        sbufWriteU8(dst, currentControlRateProfile->vbat_comp_throttle_level);
+        sbufWriteU8(dst, currentControlRateProfile->vbat_comp_pid_level);
 
         // sitckpids added in 1.46
         sbufWriteU8(dst, currentControlRateProfile->rateDynamics.rateSensCenter);
@@ -1792,8 +1792,8 @@ mspResult_e mspProcessInCommand(uint8_t cmdMSP, sbuf_t *src)
             if (sbufBytesRemaining(src) >= 4) {
                 currentControlRateProfile->vbat_comp_type = sbufReadU8(src);
                 currentControlRateProfile->vbat_comp_ref = sbufReadU8(src) * 10;
-                currentControlRateProfile->thrust_linearization_level = sbufReadU8(src);
-                currentControlRateProfile->throttle_linearization = sbufReadU8(src);
+                currentControlRateProfile->vbat_comp_throttle_level = sbufReadU8(src);
+                currentControlRateProfile->vbat_comp_pid_level = sbufReadU8(src);
             }
            if (sbufBytesRemaining(src) >= 6) {
                 currentControlRateProfile->rateDynamics.rateSensCenter = sbufReadU8(src);
