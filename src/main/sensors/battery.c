@@ -466,7 +466,7 @@ void batteryUpdateCurrentMeter(timeUs_t currentTimeUs)
     }
 }
 
-float calculateVbatCompensation(uint8_t vbatCompType, uint16_t vbatCompRef)
+float calculateVbatCompensation()
 {
     float factor =  1.0f;
     if (batteryConfig()->voltageMeterSource != VOLTAGE_METER_NONE && batteryCellCount > 0) {

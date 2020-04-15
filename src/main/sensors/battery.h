@@ -98,7 +98,7 @@ void batteryUpdateAlarms(void);
 
 struct rxConfig_s;
 
-float calculateVbatCompensation(uint8_t vbatCompType, uint16_t vbatCompRef);
+float calculateVbatCompensation();
 uint8_t calculateBatteryPercentageRemaining(void);
 bool isBatteryVoltageConfigured(void);
 uint16_t getBatteryVoltage(void);
