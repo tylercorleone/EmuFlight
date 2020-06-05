@@ -172,6 +172,7 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .motor_output_limit = 100,
         .auto_profile_cell_count = AUTO_PROFILE_CELL_COUNT_STAY,
         .horizonTransition = 0,
+        .integral_half_life = 100
     );
 }
 
@@ -636,6 +637,13 @@ static FAST_RAM_ZERO_INIT float setPointIAttenuation[XYZ_AXIS_COUNT];
 static FAST_RAM_ZERO_INIT float setPointDAttenuation[XYZ_AXIS_COUNT];
 static FAST_RAM_ZERO_INIT timeUs_t crashDetectedAtUs;
 
+static float fadeIntegral(float integral, float elapsedSeconds, float halfLifeSeconds) {
+    if (halfLifeSeconds == 0.0f) {
+        return integral;
+    }
+    return integral * powf(0.5f, elapsedSeconds / halfLifeSeconds);
+}
+
 void pidController(const pidProfile_t *pidProfile, const rollAndPitchTrims_t *angleTrim, timeUs_t currentTimeUs)
 {
     for (int axis = FD_ROLL; axis <= FD_YAW; axis++)
@@ -830,6 +838,8 @@ void pidController(const pidProfile_t *pidProfile, const rollAndPitchTrims_t *an
 
             pidData[axis].Sum = 0;
         }
+
+        temporaryIterm[axis] = fadeIntegral(temporaryIterm[axis], dT, pidProfile->integral_half_life / 10.0f);
 
         // calculating the PID sum and TPA and SPA
         // multiply these things to the pidData so that logs shows the pid data correctly
