@@ -75,6 +75,7 @@ static FAST_RAM_ZERO_INIT bool inCrashRecoveryMode = false;
 
 static FAST_RAM_ZERO_INIT float dT;
 static FAST_RAM_ZERO_INIT float pidFrequency;
+static FAST_RAM_ZERO_INIT float integralHalfLifeFactor;
 
 PG_REGISTER_WITH_RESET_TEMPLATE(pidConfig_t, pidConfig, PG_PID_CONFIG, 2);
 
@@ -172,7 +173,7 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .motor_output_limit = 100,
         .auto_profile_cell_count = AUTO_PROFILE_CELL_COUNT_STAY,
         .horizonTransition = 0,
-        .integral_half_life = 100
+        .integral_half_life = MAX_INTEGRAL_HALF_LIFE
     );
 }
 
@@ -391,6 +392,9 @@ void pidInitConfig(const pidProfile_t *pidProfile)
 #endif
     itermRotation = pidProfile->iterm_rotation;
     iDecay = (float)pidProfile->i_decay;
+    integralHalfLifeFactor = pidProfile->integral_half_life < MAX_INTEGRAL_HALF_LIFE
+                             ? powf(0.5f, dT / pidProfile->integral_half_life / 10.0f)
+                             : 1.0f;
 }
 
 void pidInit(const pidProfile_t *pidProfile)
@@ -637,13 +641,6 @@ static FAST_RAM_ZERO_INIT float setPointIAttenuation[XYZ_AXIS_COUNT];
 static FAST_RAM_ZERO_INIT float setPointDAttenuation[XYZ_AXIS_COUNT];
 static FAST_RAM_ZERO_INIT timeUs_t crashDetectedAtUs;
 
-static float fadeIntegral(float integral, float elapsedSeconds, float halfLifeSeconds) {
-    if (halfLifeSeconds == 0.0f) {
-        return integral;
-    }
-    return integral * powf(0.5f, elapsedSeconds / halfLifeSeconds);
-}
-
 void pidController(const pidProfile_t *pidProfile, const rollAndPitchTrims_t *angleTrim, timeUs_t currentTimeUs)
 {
     for (int axis = FD_ROLL; axis <= FD_YAW; axis++)
@@ -754,6 +751,7 @@ void pidController(const pidProfile_t *pidProfile, const rollAndPitchTrims_t *an
             }
         }
 
+        iterm *= integralHalfLifeFactor;
         iterm = constrainf(iterm + ITermNew, -itermLimit, itermLimit);
 
         if (!mixerIsOutputSaturated(axis, errorRate) || ABS(iterm) < ABS(temporaryIterm[axis])) {
@@ -838,8 +836,6 @@ void pidController(const pidProfile_t *pidProfile, const rollAndPitchTrims_t *an
 
             pidData[axis].Sum = 0;
         }
-
-        temporaryIterm[axis] = fadeIntegral(temporaryIterm[axis], dT, pidProfile->integral_half_life / 10.0f);
 
         // calculating the PID sum and TPA and SPA
         // multiply these things to the pidData so that logs shows the pid data correctly

@@ -40,6 +40,8 @@
 #define ITERM_SCALE 0.244381f
 #define DTERM_SCALE 0.000529f
 
+#define MAX_INTEGRAL_HALF_LIFE 100
+
 // This value gives the same "feel" as the previous Kd default of 26 (26 * DTERM_SCALE)
 
 typedef enum {
