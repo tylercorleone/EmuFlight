@@ -82,8 +82,7 @@ PG_RESET_TEMPLATE(mixerConfig_t, mixerConfig,
 
 PG_REGISTER_WITH_RESET_FN(motorConfig_t, motorConfig, PG_MOTOR_CONFIG, 1);
 
-float calculateMinAuthority();
-float calculateMinAuthorityPredictiveAirMode();
+float calculatePredictiveAirModeAuthorityMultiplier();
 
 void pgResetFn_motorConfig(motorConfig_t *motorConfig) {
 #ifdef BRUSHED_MOTORS
@@ -132,8 +131,9 @@ float motor_disarmed[MAX_SUPPORTED_MOTORS];
 mixerMode_e currentMixerMode;
 static motorMixer_t currentMixer[MAX_SUPPORTED_MOTORS];
 
-static float airmodeMinAuthority;
-static float predictiveAirModeMultiplier;
+static float minAuthorityZeroThrottle;
+static float minAuthorityFullThrottle;
+static float predictiveAirModeAuthorityMultiplier;
 static float axisLockMultiplier;
 
 static FAST_RAM_ZERO_INIT int throttleAngleCorrection;
@@ -422,8 +422,9 @@ void initEscEndpoints(void) {
 // Initialize pidProfile related mixer settings
 void mixerInitProfile(void)
 {
-    airmodeMinAuthority = CONVERT_PARAMETER_TO_PERCENT(currentPidProfile->airmode_min_authority);
-    predictiveAirModeMultiplier = CONVERT_PARAMETER_TO_PERCENT(currentPidProfile->predictiveAirModeMultiplier);
+    minAuthorityZeroThrottle = CONVERT_PARAMETER_TO_PERCENT(currentPidProfile->min_authority_zero_throttle);
+    minAuthorityFullThrottle = CONVERT_PARAMETER_TO_PERCENT(currentPidProfile->min_authority_full_throttle);
+    predictiveAirModeAuthorityMultiplier = CONVERT_PARAMETER_TO_PERCENT(currentPidProfile->predictiveAirModeMultiplier);
     axisLockMultiplier = CONVERT_PARAMETER_TO_PERCENT(currentPidProfile->axisLockMultiplier);
 }
 
@@ -804,38 +805,36 @@ FAST_RAM_ZERO_INIT float lastRcDeflection[3], stickMovement[3];
 void applyAirMode(float *motorMix, float motorMixMax) {
     float motorMixNormalizationFactor = motorMixRange > 1.0f && hardwareMotorType != MOTOR_BRUSHED ? motorMixRange : 1.0f;
     float motorMixDelta = 0.5f * motorMixRange;
-    float minAuthority = calculateMinAuthority();
+    float authorityZeroThrottle, authorityFullThrottle;
+
+    if (isAirmodeActive()) {
+        authorityZeroThrottle = authorityFullThrottle = 1.0f;
+    } else {
+        float authorityMultiplier = predictiveAirModeAuthorityMultiplier ? calculatePredictiveAirModeAuthorityMultiplier() : 1.0f;
+        authorityZeroThrottle = MAX(minAuthorityZeroThrottle * authorityMultiplier, 1.0f);
+        authorityFullThrottle = MAX(minAuthorityFullThrottle * authorityMultiplier, 1.0f);
+    }
+
     bool useAirMode2_0 = currentControlRateProfile->use_airmode_2_0 && currentControlRateProfile->thrust_linearization_level; // 2.0 mode works (well) only with thrust linearization
 
     for (int i = 0; i < motorCount; ++i) {
         motorMix[i] += motorMixDelta - motorMixMax; // let's center motorMix values around the zero
         if (useAirMode2_0) {
-            motorMix[i] = scaleThreePtsRangef(throttle, 0.0f, 0.5f, 1.0f, minAuthority * (motorMix[i] + ABS(motorMix[i])), motorMix[i], motorMix[i] - ABS(motorMix[i]));
+            motorMix[i] = scaleRangef(throttle, 0.0f, 1.0f, authorityZeroThrottle * (motorMix[i] + ABS(motorMix[i])), authorityFullThrottle * (motorMix[i] - ABS(motorMix[i])));
         } else {
-            motorMix[i] = scaleThreePtsRangef(throttle, 0.0f, 0.5f, 1.0f, minAuthority * (motorMix[i] + motorMixDelta), motorMix[i], motorMix[i] - motorMixDelta);
+            motorMix[i] = scaleRangef(throttle, 0.0f, 1.0f, authorityZeroThrottle * (motorMix[i] + motorMixDelta), authorityFullThrottle * (motorMix[i] - motorMixDelta));
         }
         motorMix[i] /= motorMixNormalizationFactor;
     }
 }
 
-float calculateMinAuthority() {
-    if (isAirmodeActive()) {
-        return 1.0f;
-    }
-    return predictiveAirModeMultiplier > 0.0f ? calculateMinAuthorityPredictiveAirMode() : airmodeMinAuthority;
-}
-
-float calculateMinAuthorityPredictiveAirMode() {
+// Predictive AirMode actually predicts the need of greater authority based on stick movements
+float calculatePredictiveAirModeAuthorityMultiplier() {
     float maxStickMovement = MAX(stickMovement[ROLL], MAX(stickMovement[PITCH], stickMovement[YAW])); // [0, 1], the max r/p/y stick movement
-    maxStickMovement *= predictiveAirModeMultiplier;
-    maxStickMovement = MIN(pt1FilterApply(&predictiveAirmodeLpf, maxStickMovement), 1.0f);
-
-    float minAuthority = MIN(0.1f + airmodeMinAuthority + maxStickMovement * (1.0f - airmodeMinAuthority), 1.0f);
-
-    DEBUG_SET(DEBUG_AIRMODE_PERCENT, 0, lrintf(minAuthority * 100.0f));
-    DEBUG_SET(DEBUG_AIRMODE_PERCENT, 1, lrintf(maxStickMovement * 100.0f));
-
-    return minAuthority;
+    float multiplier = pt1FilterApply(&predictiveAirmodeLpf, maxStickMovement) * predictiveAirModeAuthorityMultiplier;
+    multiplier = MIN(multiplier, 1.0f);
+    DEBUG_SET(DEBUG_AIRMODE_PERCENT, 0, lrintf(multiplier * 100.0f));
+    return multiplier;
 }
 
 extern float pidFrequency;

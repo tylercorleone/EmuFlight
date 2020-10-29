@@ -106,7 +106,6 @@ float degreesToRadians(int16_t degrees);
 
 int scaleRange(int x, int srcFrom, int srcTo, int destFrom, int destTo);
 float scaleRangef(float x, float srcFrom, float srcTo, float destFrom, float destTo);
-float scaleThreePtsRangef(float x, float srcFrom, float srcMed, float srcTo, float destFrom, float destMed, float destTo);
 
 void normalizeV(struct fp_vector *src, struct fp_vector *dest);
 

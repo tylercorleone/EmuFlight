@@ -137,8 +137,9 @@ typedef struct pidProfile_s {
     uint8_t motor_output_limit;             // Upper limit of the motor output (percent)
     int8_t auto_profile_cell_count;         // Cell count for this profile to be used with if auto PID profile switching is used
 
-    uint8_t airmode_min_authority;          // the wanted authority for minimum throttle and slow movements
-    uint16_t predictiveAirModeMultiplier;   // an airmode that predicts if it needs to increase its strength baed on stick movement
+    uint8_t min_authority_zero_throttle;    // the wanted authority for slow movements at zero throttle
+    uint8_t min_authority_full_throttle;    // the wanted authority for slow movements at full throttle
+    uint8_t predictiveAirModeMultiplier;    // an airmode that predicts if it needs to increase its strength based on stick movement
     uint8_t predictiveAirModeHz;            // filter on the predictiveAirModeMultiplier
     uint8_t axisLockMultiplier;             // reduces the pidsum for the other axis while moving your stick
     uint8_t axisLockHz;                     // filter on the axisLockMultiplier
