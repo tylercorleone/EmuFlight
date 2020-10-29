@@ -815,6 +815,9 @@ void applyAirMode(float *motorMix, float motorMixMax) {
         authorityFullThrottle = MAX(minAuthorityFullThrottle * authorityMultiplier, 1.0f);
     }
 
+    DEBUG_SET(DEBUG_AIRMODE_PERCENT, 0, lrintf(authorityZeroThrottle * 100.0f));
+    DEBUG_SET(DEBUG_AIRMODE_PERCENT, 1, lrintf(authorityFullThrottle * 100.0f));
+
     bool useAirMode2_0 = currentControlRateProfile->use_airmode_2_0 && currentControlRateProfile->thrust_linearization_level; // 2.0 mode works (well) only with thrust linearization
 
     for (int i = 0; i < motorCount; ++i) {
@@ -833,7 +836,6 @@ float calculatePredictiveAirModeAuthorityMultiplier() {
     float maxStickMovement = MAX(stickMovement[ROLL], MAX(stickMovement[PITCH], stickMovement[YAW])); // [0, 1], the max r/p/y stick movement
     float multiplier = pt1FilterApply(&predictiveAirmodeLpf, maxStickMovement) * predictiveAirModeAuthorityMultiplier;
     multiplier = MIN(multiplier, 1.0f);
-    DEBUG_SET(DEBUG_AIRMODE_PERCENT, 0, lrintf(multiplier * 100.0f));
     return multiplier;
 }
 
