@@ -165,6 +165,10 @@ float scaleRangef(float x, float srcFrom, float srcTo, float destFrom, float des
     return (a / b) + destFrom;
 }
 
+float scaleThreePtsRangef(float x, float srcFrom, float srcMed, float srcTo, float destFrom, float destMed, float destTo) {
+    return x < srcMed ? scaleRangef(x, srcFrom, srcMed, destFrom, destMed) : scaleRangef(x, srcMed, srcTo, destMed, destTo);
+}
+
 // Normalize a vector
 void normalizeV(struct fp_vector *src, struct fp_vector *dest) {
     float length;
