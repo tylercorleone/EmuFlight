@@ -804,15 +804,15 @@ FAST_RAM_ZERO_INIT float lastRcDeflection[3], stickMovement[3];
 void applyAirMode(float *motorMix, float motorMixMax) {
     float motorMixNormalizationFactor = motorMixRange > 1.0f && hardwareMotorType != MOTOR_BRUSHED ? motorMixRange : 1.0f;
     float motorMixDelta = 0.5f * motorMixRange;
-    float authorityAtMinThr = calculateMinAuthority();
+    float minAuthority = calculateMinAuthority();
     bool useAirMode2_0 = currentControlRateProfile->use_airmode_2_0 && currentControlRateProfile->thrust_linearization_level; // 2.0 mode works (well) only with thrust linearization
 
     for (int i = 0; i < motorCount; ++i) {
         motorMix[i] += motorMixDelta - motorMixMax; // let's center motorMix values around the zero
         if (useAirMode2_0) {
-            motorMix[i] = scaleThreePtsRangef(throttle, 0.0f, 0.5f, 1.0f, authorityAtMinThr * (motorMix[i] + ABS(motorMix[i])), motorMix[i], motorMix[i] - ABS(motorMix[i]));
+            motorMix[i] = scaleThreePtsRangef(throttle, 0.0f, 0.5f, 1.0f, minAuthority * (motorMix[i] + ABS(motorMix[i])), motorMix[i], motorMix[i] - ABS(motorMix[i]));
         } else {
-            motorMix[i] = scaleThreePtsRangef(throttle, 0.0f, 0.5f, 1.0f,authorityAtMinThr * (motorMix[i] + motorMixDelta), motorMix[i],motorMix[i] - motorMixDelta);
+            motorMix[i] = scaleThreePtsRangef(throttle, 0.0f, 0.5f, 1.0f, minAuthority * (motorMix[i] + motorMixDelta), motorMix[i], motorMix[i] - motorMixDelta);
         }
         motorMix[i] /= motorMixNormalizationFactor;
     }
