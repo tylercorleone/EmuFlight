@@ -182,6 +182,7 @@ void resetPidProfile(pidProfile_t *pidProfile) {
     .mixer_linear_throttle = false,
     .mixer_impl = MIXER_IMPL_LEGACY,
     .mixer_laziness = false,
+    .yaw_true_ff = 0,
     );
 }
 
@@ -322,6 +323,7 @@ typedef struct pidCoefficient_s {
 } pidCoefficient_t;
 
 static FAST_RAM_ZERO_INIT pidCoefficient_t pidCoefficient[XYZ_AXIS_COUNT];
+static FAST_RAM_ZERO_INIT float trueYawFF;
 static FAST_RAM_ZERO_INIT float maxVelocity[XYZ_AXIS_COUNT];
 static FAST_RAM_ZERO_INIT float feathered_pids;
 static FAST_RAM_ZERO_INIT uint8_t nfe_racermode;
@@ -364,6 +366,7 @@ void pidInitConfig(const pidProfile_t *pidProfile) {
         setPointDTransition[axis] = pidProfile->setPointDTransition[axis] / 100.0f;
         smart_dterm_smoothing[axis] = pidProfile->dFilter[axis].smartSmoothing;
     }
+    trueYawFF = YAW_TRUE_FF_SCALE * pidProfile->yaw_true_ff;
     feathered_pids = pidProfile->feathered_pids / 100.0f;
     nfe_racermode = pidProfile->nfe_racermode;
     dtermBoostMultiplier = (pidProfile->dtermBoost * pidProfile->dtermBoost / 1000000) * 0.003;
@@ -735,8 +738,19 @@ void pidController(const pidProfile_t *pidProfile, const rollAndPitchTrims_t *an
         } else {
             pidData[axis].D = 0;
         }
+
         handleCrashRecovery(pidProfile->crash_recovery, angleTrim, axis, currentTimeUs, errorRate, &currentPidSetpoint, &errorRate);
         detectAndSetCrashRecovery(pidProfile->crash_recovery, axis, currentTimeUs, pidData[axis].D, errorRate);
+
+        // -----calculate true yaw feedforward component
+        // feedforward as betaflight calls it is really a setpoint derivative
+        // this feedforward is literally setpoint * feedforward
+        // since yaw acts different this will only work for yaw
+        float yawFeedForward = 0;
+        if (axis == FD_YAW) {
+            yawFeedForward = currentPidSetpoint * trueYawFF;
+        }
+
 #ifdef USE_YAW_SPIN_RECOVERY
         if (gyroYawSpinDetected()) {
             temporaryIterm[axis] = 0; // in yaw spin always disable I
@@ -771,7 +785,7 @@ void pidController(const pidProfile_t *pidProfile, const rollAndPitchTrims_t *an
             pidData[axis].D *= getThrottleDAttenuation();
         }
 
-        const float pidSum = pidData[axis].P + pidData[axis].I + pidData[axis].D;
+        const float pidSum = pidData[axis].P + pidData[axis].I + pidData[axis].D + yawFeedForward;
         pidData[axis].Sum = pidSum;
     }
 }
