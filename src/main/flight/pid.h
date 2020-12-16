@@ -147,6 +147,9 @@ typedef struct pidProfile_s {
     uint8_t mixer_linear_throttle;            // When thrust linearization is enabled (mixer_thrust_linearization_level_high_rpm is > 0), tells whether the throttle response has to be linear too or counter-compensated for legacy feedback
     mixerImplType_e mixer_impl;               // Which mixer implementation use
     uint8_t mixer_laziness;                   // If enabled, mixer clipping strategy will shift values only by the minimum required amount per motor group
+
+    uint8_t axis_lock_hz;                   // filter for the axis lock
+    uint8_t axis_lock_multiplier;           // multplier for the axis lock effect
 } pidProfile_t;
 
 #ifndef USE_OSD_SLAVE
