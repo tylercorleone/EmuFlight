@@ -74,14 +74,13 @@ static uint8_t itermRelaxThresholdYaw;
 static uint8_t itermWindup;
 static uint16_t dtermBoost;
 static uint8_t dtermBoostLimit;
-static uint8_t tempPid[3][3];
+static uint8_t tempPid[3][4];
 static uint8_t tempPidWc[3];
 static uint8_t linear_thrust_low_output;
 static uint8_t linear_thrust_high_output;
 static uint8_t linear_throttle;
 static mixerImplType_e mixer_impl;
 static uint8_t mixer_laziness;
-static uint8_t trueYawFF;
 
 static uint8_t tmpRateProfileIndex;
 static uint8_t rateProfileIndex;
@@ -235,8 +234,8 @@ static long cmsx_PidRead(void) {
         tempPid[i][0] = pidProfile->pid[i].P;
         tempPid[i][1] = pidProfile->pid[i].I;
         tempPid[i][2] = pidProfile->pid[i].D;
+        tempPid[i][3] = pidProfile->pid[i].F;
     }
-    trueYawFF = pidProfile->yaw_true_ff;
     return 0;
 }
 
@@ -253,8 +252,8 @@ static long cmsx_PidWriteback(const OSD_Entry *self) {
         pidProfile->pid[i].P = tempPid[i][0];
         pidProfile->pid[i].I = tempPid[i][1];
         pidProfile->pid[i].D = tempPid[i][2];
+        pidProfile->pid[i].F = tempPid[i][3];
     }
-    pidProfile->yaw_true_ff = trueYawFF;
     pidInitConfig(currentPidProfile);
     return 0;
 }
@@ -266,15 +265,17 @@ static OSD_Entry cmsx_menuPidEntries[] = {
     { "ROLL  P", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_ROLL][0],  0, 200, 1 }, 0 },
     { "ROLL  I", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_ROLL][1],  0, 200, 1 }, 0 },
     { "ROLL  D", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_ROLL][2],  0, 200, 1 }, 0 },
+    { "ROLL  F", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_ROLL][3],  0, 200, 1 }, 0 },
 
     { "PITCH P", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_PITCH][0], 0, 200, 1 }, 0 },
     { "PITCH I", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_PITCH][1], 0, 200, 1 }, 0 },
     { "PITCH D", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_PITCH][2], 0, 200, 1 }, 0 },
+    { "PITCH F", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_PITCH][3], 0, 200, 1 }, 0 },
 
     { "YAW   P", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_YAW][0],   0, 200, 1 }, 0 },
     { "YAW   I", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_YAW][1],   0, 200, 1 }, 0 },
     { "YAW   D", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_YAW][2],   0, 200, 1 }, 0 },
-    { "TRUE YAW FF", OME_UINT8, NULL, &(OSD_UINT8_t){ &trueYawFF,         0, 200, 1 }, 0 },
+    { "YAW   F", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_YAW][3],   0, 200, 1 }, 0 },
 
     { "SAVE&EXIT",   OME_OSD_Exit, cmsMenuExit,   (void *)CMS_EXIT_SAVE, 0},
     { "BACK", OME_Back, NULL, NULL, 0 },

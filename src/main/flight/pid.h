@@ -39,7 +39,7 @@
 #define PTERM_SCALE 0.032029f
 #define ITERM_SCALE 0.244381f
 #define DTERM_SCALE 0.000529f
-#define YAW_TRUE_FF_SCALE 0.005f
+#define FTERM_SCALE 0.005f
 
 typedef enum {
     PID_ROLL,
@@ -79,7 +79,7 @@ typedef struct pidf_s {
     uint8_t P;
     uint8_t I;
     uint8_t D;
-    uint16_t F; // Only angle mode still uses FF
+    uint8_t F;
 
 } pidf_t;
 
@@ -92,7 +92,6 @@ typedef struct dFilter_s {
 
 typedef struct pidProfile_s {
     pidf_t  pid[PID_ITEM_COUNT];
-    uint8_t yaw_true_ff;                    // a true FF for the yaw
     dFilter_t dFilter[3];
 
     uint8_t dterm_filter_type;              // Filter selection for dterm
@@ -149,7 +148,7 @@ typedef struct pidProfile_s {
     uint8_t mixer_laziness;                 // If enabled, mixer clipping strategy will shift values only by the minimum required amount per motor group. Requires linear thrust
 
     uint8_t axis_lock_hz;                   // filter for the axis lock
-    uint8_t axis_lock_multiplier;           // multplier for the axis lock effect
+    uint8_t axis_lock_multiplier;           // multiplier for the axis lock effect
 } pidProfile_t;
 
 #ifndef USE_OSD_SLAVE
@@ -172,6 +171,7 @@ typedef struct pidAxisData_s {
     float P;
     float I;
     float D;
+    float F;
 
     float Sum;
 } pidAxisData_t;

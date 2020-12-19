@@ -183,7 +183,6 @@ void resetPidProfile(pidProfile_t *pidProfile) {
     .linear_throttle = false,
     .mixer_impl = MIXER_IMPL_LEGACY,
     .mixer_laziness = false,
-    .yaw_true_ff = 0,
     .axis_lock_hz = 2,
     .axis_lock_multiplier = 0,
     );
@@ -329,7 +328,6 @@ typedef struct pidCoefficient_s {
 } pidCoefficient_t;
 
 static FAST_RAM_ZERO_INIT pidCoefficient_t pidCoefficient[XYZ_AXIS_COUNT];
-static FAST_RAM_ZERO_INIT float trueYawFF;
 static FAST_RAM_ZERO_INIT float maxVelocity[XYZ_AXIS_COUNT];
 static FAST_RAM_ZERO_INIT float feathered_pids;
 static FAST_RAM_ZERO_INIT uint8_t nfe_racermode;
@@ -368,12 +366,12 @@ void pidInitConfig(const pidProfile_t *pidProfile) {
         pidCoefficient[axis].Kp = PTERM_SCALE * pidProfile->pid[axis].P;
         pidCoefficient[axis].Ki = ITERM_SCALE * pidProfile->pid[axis].I;
         pidCoefficient[axis].Kd = DTERM_SCALE * pidProfile->pid[axis].D;
+        pidCoefficient[axis].Kf = FTERM_SCALE * pidProfile->pid[axis].F;
         setPointPTransition[axis] = pidProfile->setPointPTransition[axis] / 100.0f;
         setPointITransition[axis] = pidProfile->setPointITransition[axis] / 100.0f;
         setPointDTransition[axis] = pidProfile->setPointDTransition[axis] / 100.0f;
         smart_dterm_smoothing[axis] = pidProfile->dFilter[axis].smartSmoothing;
     }
-    trueYawFF = YAW_TRUE_FF_SCALE * pidProfile->yaw_true_ff;
     feathered_pids = pidProfile->feathered_pids / 100.0f;
     nfe_racermode = pidProfile->nfe_racermode;
     dtermBoostMultiplier = (pidProfile->dtermBoost * pidProfile->dtermBoost / 1000000) * 0.003;
@@ -770,11 +768,7 @@ void pidController(const pidProfile_t *pidProfile, const rollAndPitchTrims_t *an
         // -----calculate true yaw feedforward component
         // feedforward as betaflight calls it is really a setpoint derivative
         // this feedforward is literally setpoint * feedforward
-        // since yaw acts different this will only work for yaw
-        float yawFeedForward = 0;
-        if (axis == FD_YAW) {
-            yawFeedForward = currentPidSetpoint * trueYawFF;
-        }
+        pidData[axis].F = currentPidSetpoint * pidCoefficient[axis].Kf;
 
 #ifdef USE_YAW_SPIN_RECOVERY
         if (gyroYawSpinDetected()) {
@@ -810,7 +804,7 @@ void pidController(const pidProfile_t *pidProfile, const rollAndPitchTrims_t *an
             pidData[axis].D *= getThrottleDAttenuation();
         }
 
-        const float pidSum = pidData[axis].P + pidData[axis].I + pidData[axis].D + yawFeedForward;
+        const float pidSum = pidData[axis].P + pidData[axis].I + pidData[axis].D + pidData[axis].F;
         pidData[axis].Sum = pidSum * scaledAxisPid[axis];
     }
 }
