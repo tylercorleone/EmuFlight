@@ -74,7 +74,7 @@ static uint8_t itermRelaxThresholdYaw;
 static uint8_t itermWindup;
 static uint16_t dtermBoost;
 static uint8_t dtermBoostLimit;
-static uint8_t tempPid[3][4];
+static uint8_t tempPid[4][4];
 static uint8_t tempPidWc[3];
 static uint8_t linear_thrust_low_output;
 static uint8_t linear_thrust_high_output;
@@ -230,7 +230,7 @@ static CMS_Menu cmsx_menuPidAdvanced = {
 
 static long cmsx_PidRead(void) {
     const pidProfile_t *pidProfile = pidProfiles(pidProfileIndex);
-    for (uint8_t i = 0; i < 3; i++) {
+    for (uint8_t i = 0; i < 4; i++) {
         tempPid[i][0] = pidProfile->pid[i].P;
         tempPid[i][1] = pidProfile->pid[i].I;
         tempPid[i][2] = pidProfile->pid[i].D;
@@ -248,7 +248,7 @@ static long cmsx_PidOnEnter(void) {
 static long cmsx_PidWriteback(const OSD_Entry *self) {
     UNUSED(self);
     pidProfile_t *pidProfile = currentPidProfile;
-    for (uint8_t i = 0; i < 3; i++) {
+    for (uint8_t i = 0; i < 4; i++) {
         pidProfile->pid[i].P = tempPid[i][0];
         pidProfile->pid[i].I = tempPid[i][1];
         pidProfile->pid[i].D = tempPid[i][2];
@@ -276,6 +276,11 @@ static OSD_Entry cmsx_menuPidEntries[] = {
     { "YAW   I", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_YAW][1],   0, 200, 1 }, 0 },
     { "YAW   D", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_YAW][2],   0, 200, 1 }, 0 },
     { "YAW   F", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_YAW][3],   0, 200, 1 }, 0 },
+
+    { "ZETA  P", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_ZETA][0],  0, 200, 1 }, 0 },
+    { "ZETA  I", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_ZETA][1],  0, 200, 1 }, 0 },
+    { "ZETA  D", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_ZETA][2],  0, 200, 1 }, 0 },
+    { "ZETA  F", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_ZETA][3],  0, 200, 1 }, 0 },
 
     { "SAVE&EXIT",   OME_OSD_Exit, cmsMenuExit,   (void *)CMS_EXIT_SAVE, 0},
     { "BACK", OME_Back, NULL, NULL, 0 },

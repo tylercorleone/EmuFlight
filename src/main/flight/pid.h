@@ -48,6 +48,7 @@ typedef enum {
     PID_LEVEL_LOW, //pid controller for low errorAngle
     PID_LEVEL_HIGH, //pid controller for high errorAngle
     PID_MAG,
+    PID_ZETA,
     PID_ITEM_COUNT
 } pidIndex_e;
 
@@ -194,4 +195,4 @@ void pidCopyProfile(uint8_t dstPidProfileIndex, uint8_t srcPidProfileIndex);
 bool crashRecoveryModeActive(void);
 void pidInitSetpointDerivativeLpf(uint16_t filterCutoff, uint8_t debugAxis, uint8_t filterType);
 void pidUpdateSetpointDerivativeLpf(uint16_t filterCutoff);
-float pidGetPreviousSetpoint(int axis);
+float getPidSetpoint(int axis);
