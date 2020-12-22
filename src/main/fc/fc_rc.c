@@ -79,6 +79,7 @@ static applyRatesFn *applyRates;
 // static float rcStepSize[4] = { 0, 0, 0, 0 };
 // static float inverseRcInt;
 
+static FAST_RAM_ZERO_INIT float axisLockFactor;
 FAST_RAM_ZERO_INIT uint8_t interpolationChannels;
 volatile bool isRXDataNew;
 volatile uint8_t skipInterpolate;
@@ -131,6 +132,8 @@ float getThrottleDAttenuation(void) {
 #define THROTTLE_LOOKUP_LENGTH 12
 static int16_t lookupThrottleRC[THROTTLE_LOOKUP_LENGTH];    // lookup table for expo & mid THROTTLE
 
+void applyAxisLock(void);
+
 static int16_t rcLookupThrottle(int32_t tmp) {
     const int32_t tmp2 = tmp / 100;
     // [0;1000] -> expo -> [MINTHROTTLE;MAXTHROTTLE]
@@ -179,16 +182,9 @@ static void calculateSetpointRate(int axis) {
     } else
 #endif
     {
-        // scale rcCommandf to range [-1.0, 1.0]
-        //
-        // TODO modify rcCommand in order to make for a smoother/snappier flight feel
-        //
-
-        float rcCommandf = rcCommand[axis] / 500.0f;
-        rcDeflection[axis] = rcCommandf;
-        const float rcCommandfAbs = ABS(rcCommandf);
-        rcDeflectionAbs[axis] = rcCommandfAbs;
-        angleRate = applyRates(axis, rcCommandf, rcCommandfAbs);
+        rcDeflection[axis] = rcCommand[axis] / 500.0f; // scales rcCommand to range [-1.0, 1.0]
+        rcDeflectionAbs[axis] = ABS(rcDeflection[axis]);
+        angleRate = applyRates(axis, rcDeflection[axis], rcDeflectionAbs[axis]);
     }
     setpointRate[axis] = constrainf(angleRate, -SETPOINT_RATE_LIMIT, SETPOINT_RATE_LIMIT); // Rate limit protection (deg/sec)
     memcpy((uint32_t*)&setpointRateInt[axis], (uint32_t*)&setpointRate[axis], sizeof(float));
@@ -641,12 +637,16 @@ FAST_CODE FAST_CODE_NOINLINE void updateRcCommands(void) {
         rcCommand[axis] = rateDynamics(rcCommand[axis], axis, currentRxRefreshRate);
     }
 
-      applyPolarExpo();
+    if (axisLockFactor) {
+        applyAxisLock();
+    }
 
-      applyRollYawMix();
+    applyPolarExpo();
 
-      if (rxConfig()->showAlteredRc != 0) {
-      for (int axis = 0; axis < 3; axis++) {
+    applyRollYawMix();
+
+    if (rxConfig()->showAlteredRc != 0) {
+        for (int axis = 0; axis < 3; axis++) {
             if (axis == ROLL || axis == PITCH) {
                 rcData[axis] = rcCommand[axis] + rxConfig()->midrc;
             } else {
@@ -743,6 +743,7 @@ void initRcProcessing(void) {
         interpolationChannels |= THROTTLE_FLAG;
         break;
     }
+    axisLockFactor = currentControlRateProfile->axis_lock_percent / 100.0f;
 }
 
 bool rcSmoothingIsEnabled(void) {
@@ -818,4 +819,18 @@ FAST_CODE float rateDynamics(float rcCommand, int axis, int currentRxRefreshRate
         lastRcCommandData[axis] = rcCommand;
     }
     return rcCommand;
+}
+
+void applyAxisLock() {
+    float rcCommandAbsMax = 0;
+    for (int axis = FD_ROLL; axis <= FD_YAW; axis++) {
+        float rcCommandAbs = ABS(rcCommand[axis]);
+        if (rcCommandAbs > rcCommandAbsMax) {
+            rcCommandAbsMax = rcCommandAbs;
+        }
+    }
+    for (int axis = FD_ROLL; axis <= FD_YAW; axis++) {
+        float axisWeight = rcCommandAbsMax != 0 ? ABS(rcCommand[axis] / rcCommandAbsMax) : 1.0f;
+        rcCommand[axis] *= SCALE_UNITARY_RANGE(axisWeight, axisLockFactor, 1.0f);
+    }
 }
