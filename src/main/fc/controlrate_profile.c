@@ -67,7 +67,8 @@ void pgResetFn_controlRateProfiles(controlRateConfig_t *controlRateConfig) {
         .addRollToYawRc = 0,
         .addYawToRollRc = 0,
         .rollPitchMagExpo = 0,
-                    );
+        .axis_lock_percent = 100,
+        );
     }
 }
 
