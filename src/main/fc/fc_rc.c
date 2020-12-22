@@ -614,6 +614,7 @@ FAST_CODE FAST_CODE_NOINLINE void updateRcCommands(void) {
         throttleDAttenuation = propD / 100.0f;
     }
     for (int axis = 0; axis < 3; axis++) {
+        previousRcCommand[axis] = rcCommand[axis];
         // non coupled PID reduction scaler used in PID controller 1 and PID controller 2.
         int32_t tmp = MIN(ABS(rcData[axis] - rxConfig()->midrc), 500);
         if (axis == ROLL || axis == PITCH) {
@@ -822,15 +823,16 @@ FAST_CODE float rateDynamics(float rcCommand, int axis, int currentRxRefreshRate
 }
 
 void applyAxisLock() {
-    float rcCommandAbsMax = 0;
+    float stickMovementMax = 0;
+    float stickMovement[XYZ_AXIS_COUNT];
     for (int axis = FD_ROLL; axis <= FD_YAW; axis++) {
-        float rcCommandAbs = ABS(rcCommand[axis]);
-        if (rcCommandAbs > rcCommandAbsMax) {
-            rcCommandAbsMax = rcCommandAbs;
+        stickMovement[axis] = ABS(rcCommand[axis] - previousRcCommand[axis]);
+        if (stickMovement[axis]  > stickMovementMax) {
+            stickMovementMax = stickMovement[axis] ;
         }
     }
     for (int axis = FD_ROLL; axis <= FD_YAW; axis++) {
-        float axisWeight = rcCommandAbsMax != 0 ? ABS(rcCommand[axis] / rcCommandAbsMax) : 1.0f;
-        rcCommand[axis] *= SCALE_UNITARY_RANGE(axisWeight, axisLockFactor, 1.0f);
+        float axisWeight = stickMovementMax != 0 ? stickMovement[axis] / stickMovementMax : 1.0f;
+        rcCommand[axis] = SCALE_UNITARY_RANGE(axisWeight, previousRcCommand[axis], rcCommand[axis]);
     }
 }
