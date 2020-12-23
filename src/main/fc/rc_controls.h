@@ -106,7 +106,7 @@ typedef enum {
 #define CONTROL_RATE_CONFIG_TPA_MAX   250
 
 extern float rcCommand[4];
-extern float previousRcCommand[4];
+extern float previousRcCommand[3];
 
 typedef struct rcSmoothingFilterTraining_s {
     float sum;

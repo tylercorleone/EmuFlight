@@ -77,6 +77,7 @@ typedef struct controlRateConfig_s {
     uint8_t vbat_comp_ref;                  // Sets the voltage reference to calculate the battery compensation
 
     uint8_t axis_lock_percent;              // TODO
+    uint8_t axis_lock_hz;                   // TODO
 
 } controlRateConfig_t;
 

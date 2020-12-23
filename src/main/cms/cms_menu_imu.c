@@ -342,7 +342,8 @@ static OSD_Entry cmsx_menuRateProfileEntries[] = {
     { "VBAT COMP REF",   OME_UINT8, NULL, &(OSD_UINT8_t)  { &rateProfile.vbat_comp_ref, VBAT_CELL_VOTAGE_RANGE_MIN, VBAT_CELL_VOTAGE_RANGE_MAX,  1}, 0 },
     { "THROTTLE LIMIT %", OME_UINT8, NULL, &(OSD_UINT8_t) { &rateProfile.throttle_limit_percent, 25,  100,  1}, 0 },
 
-    { "AXIS LOCK MULT",   OME_UINT8, NULL, &(OSD_UINT8_t) { &rateProfile.axis_lock_percent, 50, 200,  1}, 0 },
+    { "AXIS LOCK %",  OME_UINT8, NULL, &(OSD_UINT8_t) { &rateProfile.axis_lock_percent, 0, 100,  1}, 0 },
+    { "AXIS LOCK HZ", OME_UINT8, NULL, &(OSD_UINT8_t) { &rateProfile.axis_lock_hz, 1, 50,  1}, 0 },
 
     { "SAVE&EXIT",   OME_OSD_Exit, cmsMenuExit,   (void *)CMS_EXIT_SAVE, 0},
     { "BACK", OME_Back, NULL, NULL, 0 },

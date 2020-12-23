@@ -79,14 +79,15 @@ static applyRatesFn *applyRates;
 // static float rcStepSize[4] = { 0, 0, 0, 0 };
 // static float inverseRcInt;
 
-static FAST_RAM_ZERO_INIT float axisLockFactor;
 FAST_RAM_ZERO_INIT uint8_t interpolationChannels;
 volatile bool isRXDataNew;
 volatile uint8_t skipInterpolate;
 volatile int16_t rcInterpolationStepCount;
 volatile uint16_t rxRefreshRate;
 volatile uint16_t currentRxRefreshRate;
-
+static FAST_RAM_ZERO_INIT float axisLockLevel;
+static FAST_RAM_ZERO_INIT pt1Filter_t rcCommandLpf[XYZ_AXIS_COUNT];
+static FAST_RAM_ZERO_INIT float rcCommandLpFiltered[XYZ_AXIS_COUNT];
 
 #ifdef USE_RC_SMOOTHING_FILTER
 #define RC_SMOOTHING_IDENTITY_FREQUENCY         80    // Used in the formula to convert a BIQUAD cutoff frequency to PT1
@@ -614,7 +615,6 @@ FAST_CODE FAST_CODE_NOINLINE void updateRcCommands(void) {
         throttleDAttenuation = propD / 100.0f;
     }
     for (int axis = 0; axis < 3; axis++) {
-        previousRcCommand[axis] = rcCommand[axis];
         // non coupled PID reduction scaler used in PID controller 1 and PID controller 2.
         int32_t tmp = MIN(ABS(rcData[axis] - rxConfig()->midrc), 500);
         if (axis == ROLL || axis == PITCH) {
@@ -638,7 +638,7 @@ FAST_CODE FAST_CODE_NOINLINE void updateRcCommands(void) {
         rcCommand[axis] = rateDynamics(rcCommand[axis], axis, currentRxRefreshRate);
     }
 
-    if (axisLockFactor) {
+    if (axisLockLevel) {
         applyAxisLock();
     }
 
@@ -744,7 +744,10 @@ void initRcProcessing(void) {
         interpolationChannels |= THROTTLE_FLAG;
         break;
     }
-    axisLockFactor = currentControlRateProfile->axis_lock_percent / 100.0f;
+    axisLockLevel = currentControlRateProfile->axis_lock_percent / 100.0f;
+    for (int i = 0; i < XYZ_AXIS_COUNT; i++) {
+        pt1FilterInit(&rcCommandLpf[i], pt1FilterGain(currentControlRateProfile->axis_lock_hz, targetPidLooptime * 1e-6f));
+    }
 }
 
 bool rcSmoothingIsEnabled(void) {
@@ -823,16 +826,21 @@ FAST_CODE float rateDynamics(float rcCommand, int axis, int currentRxRefreshRate
 }
 
 void applyAxisLock() {
-    float stickMovementMax = 0;
-    float stickMovement[XYZ_AXIS_COUNT];
+    float rcCommandDeltaMax = 0;
+    float rcCommandFilteredDelta[XYZ_AXIS_COUNT];
     for (int axis = FD_ROLL; axis <= FD_YAW; axis++) {
-        stickMovement[axis] = ABS(rcCommand[axis] - previousRcCommand[axis]);
-        if (stickMovement[axis]  > stickMovementMax) {
-            stickMovementMax = stickMovement[axis] ;
+        float previousRcCommandLpFiltered = rcCommandLpFiltered[axis];
+        rcCommandLpFiltered[axis] = pt1FilterApply(&rcCommandLpf[axis], rcCommand[axis]);
+        rcCommandFilteredDelta[axis] = ABS(rcCommandLpFiltered[axis] - previousRcCommandLpFiltered);
+        if (rcCommandFilteredDelta[axis] > rcCommandDeltaMax) {
+            rcCommandDeltaMax = rcCommandFilteredDelta[axis] ;
         }
     }
     for (int axis = FD_ROLL; axis <= FD_YAW; axis++) {
-        float axisWeight = stickMovementMax != 0 ? stickMovement[axis] / stickMovementMax : 1.0f;
-        rcCommand[axis] = SCALE_UNITARY_RANGE(axisWeight, previousRcCommand[axis], rcCommand[axis]);
+        float axisWeight = rcCommandDeltaMax != 0 ? rcCommandFilteredDelta[axis] / rcCommandDeltaMax : 1.0f;
+        float lockedRcCommand = SCALE_UNITARY_RANGE(axisWeight, previousRcCommand[axis], rcCommand[axis]);
+        lockedRcCommand = SCALE_UNITARY_RANGE(axisLockLevel, rcCommand[axis], lockedRcCommand);
+        previousRcCommand[axis] = rcCommand[axis];
+        rcCommand[axis] = lockedRcCommand;
     }
 }
