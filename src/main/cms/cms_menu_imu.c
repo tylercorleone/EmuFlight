@@ -70,6 +70,11 @@ static char pidProfileIndexString[MAX_PROFILE_NAME_LENGTH + 5];
 static uint8_t tempPid[3][3];
 static uint16_t tempPidF[3];
 static uint8_t tempPidDF;
+static uint8_t linear_thrust_low_output;
+static uint8_t linear_thrust_high_output;
+static uint8_t linear_throttle;
+static mixerImplType_e mixer_impl;
+static uint8_t mixer_laziness;
 
 static uint8_t tmpRateProfileIndex;
 static uint8_t rateProfileIndex;
@@ -85,6 +90,14 @@ static const char * const osdTableGyroToUse[] = {
     "FIRST", "SECOND", "BOTH"
 };
 #endif
+
+static const char * const cms_offOnLabels[] = {
+    "OFF", "ON"
+};
+
+static const char * const cms_mixerImplTypeLabels[] = {
+    "LEGACY", "SMOOTH", "2PASS"
+};
 
 static void setProfileIndexString(char *profileString, int profileIndex, char *profileName)
 {
@@ -180,6 +193,12 @@ static const void *cmsx_PidAdvancedOnEnter(displayPort_t *pDisp)
     cmsx_iterm_relax_cutoff_yaw = pidProfile->iterm_relax_cutoff_yaw;
 #endif
 
+    linear_thrust_low_output = pidProfile->linear_thrust_low_output;
+    linear_thrust_high_output = pidProfile->linear_thrust_high_output;
+    linear_throttle = pidProfile->linear_throttle;
+    mixer_impl = pidProfile->mixer_impl;
+    mixer_laziness = pidProfile->mixer_laziness;
+
     return NULL;
 }
 
@@ -201,6 +220,13 @@ static const void *cmsx_PidAdvancedWriteback(displayPort_t *pDisp, const OSD_Ent
     pidProfile->iterm_relax_cutoff_yaw = cmsx_iterm_relax_cutoff_yaw;
 #endif
 
+    pidProfile->linear_thrust_low_output = linear_thrust_low_output;
+    pidProfile->linear_thrust_high_output = linear_thrust_high_output;
+    pidProfile->linear_throttle = linear_throttle;
+    pidProfile->mixer_impl = mixer_impl;
+    pidProfile->mixer_laziness = mixer_laziness;
+    pidInitConfig(currentPidProfile);
+
     return NULL;
 }
 
@@ -220,6 +246,13 @@ static const OSD_Entry cmsx_menuPidAdvancedEntries[] =
     { "I RELAX CUTOFF",    OME_UINT8, NULL, &(OSD_UINT8_t){ &cmsx_iterm_relax_cutoff,      10, 100, 1 }, 0 },
     { "I RELAX CUTOFF YAW", OME_UINT8, NULL, &(OSD_UINT8_t){ &cmsx_iterm_relax_cutoff_yaw,  10, 100, 1 }, 0 },
 #endif
+
+    { "LINEAR THRUST LOW",  OME_UINT8, NULL, &(OSD_UINT8_t) { &linear_thrust_low_output, 0, 100,  1}, 0 },
+    { "LINEAR THRUST HIGH", OME_UINT8, NULL, &(OSD_UINT8_t) { &linear_thrust_high_output, 0, 100,  1}, 0 },
+    { "LINEAR THROTTLE",    OME_TAB,   NULL, &(OSD_TAB_t)   { (uint8_t *) &linear_throttle, 1, cms_offOnLabels }, 0 },
+    { "MIXER IMPL",         OME_TAB,   NULL, &(OSD_TAB_t)   { &mixer_impl, MIXER_IMPL_COUNT - 1, cms_mixerImplTypeLabels }, 0 },
+    { "MIXER LAZINESS",     OME_TAB,   NULL, &(OSD_TAB_t)   { (uint8_t *) &mixer_laziness, 1, cms_offOnLabels }, 0 },
+
     { "BACK", OME_Back, NULL, NULL, 0 },
     { NULL, OME_END, NULL, NULL, 0 }
 };

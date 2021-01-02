@@ -77,6 +77,13 @@ typedef enum {
     PID_CRASH_RECOVERY_DISARM,
 } pidCrashRecovery_e;
 
+typedef enum {
+    MIXER_IMPL_LEGACY = 0,
+    MIXER_IMPL_SMOOTH,
+    MIXER_IMPL_2PASS,
+    MIXER_IMPL_COUNT
+} mixerImplType_e;
+
 typedef struct pidf_s {
     uint8_t P;
     uint8_t I;
@@ -137,8 +144,8 @@ typedef struct pidProfile_s {
     uint8_t iterm_rotation;                 // rotates iterm to translate world errors to local coordinate system
     uint8_t iterm_relax_cutoff;
     uint8_t iterm_relax_cutoff_yaw;
-    uint8_t iterm_relax_threshold;             // This cutoff frequency specifies a low pass filter which predicts average response of the quad to setpoint
-    uint8_t iterm_relax_threshold_yaw;         // This cutoff frequency specifies a low pass filter which predicts average response of the quad to setpoint
+    uint8_t iterm_relax_threshold;          // This cutoff frequency specifies a low pass filter which predicts average response of the quad to setpoint
+    uint8_t iterm_relax_threshold_yaw;      // This cutoff frequency specifies a low pass filter which predicts average response of the quad to setpoint
     uint8_t dterm_filter2_type;             // Filter selection for 2nd dterm
     uint16_t dyn_lpf_dterm_min_hz;
     uint16_t dyn_lpf_dterm_max_hz;
@@ -190,6 +197,12 @@ typedef struct pidProfile_s {
 
     uint8_t axis_lock_hz;                   // filter for the axis lock
     uint8_t axis_lock_multiplier;           // multplier for the axis lock effect
+
+    uint8_t linear_thrust_low_output;       // Sets the level of thrust linearization for low motor outputs
+    uint8_t linear_thrust_high_output;      // Sets the level of thrust linearization for high motor outputs
+    uint8_t linear_throttle;                // When thrust linearization is enabled, tells whether the throttle has to be linear or counter-compensated for legacy feedback
+    mixerImplType_e mixer_impl;             // Which mixer implementation use
+    uint8_t mixer_laziness;                 // If enabled, mixer clipping strategy will shift values only by the minimum required amount per motor group. Requires linear thrust
 } pidProfile_t;
 
 PG_DECLARE_ARRAY(pidProfile_t, PID_PROFILE_COUNT, pidProfiles);

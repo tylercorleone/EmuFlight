@@ -66,16 +66,20 @@
 
 #define DYN_LPF_THROTTLE_UPDATE_DELAY_US 2500 // 2.5ms between updates
 
-static FAST_DATA_ZERO_INIT float motorMixRange;
+static FAST_DATA_ZERO_INIT float controllerMixRange;
 
 float FAST_DATA_ZERO_INIT motor[MAX_SUPPORTED_MOTORS];
 float motor_disarmed[MAX_SUPPORTED_MOTORS];
 
 static FAST_DATA_ZERO_INIT int throttleAngleCorrection;
 
-float getMotorMixRange(void)
+static void twoPassMix(float *motorMix, const float *yawMix, const float *rollPitchMix, float yawMixMin, float yawMixMax,
+                       float rollPitchMixMin, float rollPitchMixMax);
+static void mixThingsUp(float scaledAxisPidRoll, float scaledAxisPidPitch, float scaledAxisPidYaw, float *motorMix);
+
+float getControllerMixRange(void)
 {
-    return motorMixRange;
+    return controllerMixRange;
 }
 
 void writeMotors(void)
@@ -104,8 +108,9 @@ static FAST_DATA_ZERO_INIT float motorOutputMin;
 static FAST_DATA_ZERO_INIT float motorRangeMin;
 static FAST_DATA_ZERO_INIT float motorRangeMax;
 static FAST_DATA_ZERO_INIT float motorOutputRange;
-static FAST_DATA_ZERO_INIT int8_t motorOutputMixSign;
-
+static FAST_DATA_ZERO_INIT float motorOutputIdleLevel; // e.g. 5% idle throttle -> 0.05
+static FAST_DATA_ZERO_INIT float motorThrustIdleLevel; // corresponding thrust level of motorOutputIdleLevel
+static FAST_DATA_ZERO_INIT int8_t controllerMix3DModeSign; // 1 -> normal, -1 -> reversed
 
 static void calculateThrottleAndCurrentMotorEndpoints(timeUs_t currentTimeUs)
 {
@@ -152,10 +157,10 @@ static void calculateThrottleAndCurrentMotorEndpoints(timeUs_t currentTimeUs)
                 motorOutputRange = mixerRuntime.motorOutputLow - mixerRuntime.deadbandMotor3dLow;
             }
 
-            if (motorOutputMixSign != -1) {
+            if (controllerMix3DModeSign != -1) {
                 reversalTimeUs = currentTimeUs;
             }
-            motorOutputMixSign = -1;
+            controllerMix3DModeSign = -1;
 
             rcThrottlePrevious = rcCommand[THROTTLE];
             throttle = rcCommand3dDeadBandLow - rcCommand[THROTTLE];
@@ -166,10 +171,10 @@ static void calculateThrottleAndCurrentMotorEndpoints(timeUs_t currentTimeUs)
             motorRangeMax = mixerRuntime.motorOutputHigh;
             motorOutputMin = mixerRuntime.deadbandMotor3dHigh;
             motorOutputRange = mixerRuntime.motorOutputHigh - mixerRuntime.deadbandMotor3dHigh;
-            if (motorOutputMixSign != 1) {
+            if (controllerMix3DModeSign != 1) {
                 reversalTimeUs = currentTimeUs;
             }
-            motorOutputMixSign = 1;
+            controllerMix3DModeSign = 1;
             rcThrottlePrevious = rcCommand[THROTTLE];
             throttle = rcCommand[THROTTLE] - rcCommand3dDeadBandHigh;
             currentThrottleInputRange = rcCommandThrottleRange3dHigh;
@@ -191,10 +196,10 @@ static void calculateThrottleAndCurrentMotorEndpoints(timeUs_t currentTimeUs)
                 motorOutputRange = mixerRuntime.motorOutputLow - mixerRuntime.deadbandMotor3dLow;
             }
 
-            if (motorOutputMixSign != -1) {
+            if (controllerMix3DModeSign != -1) {
                 reversalTimeUs = currentTimeUs;
             }
-            motorOutputMixSign = -1;
+            controllerMix3DModeSign = -1;
 
             throttle = 0;
             currentThrottleInputRange = rcCommandThrottleRange3dLow;
@@ -204,10 +209,10 @@ static void calculateThrottleAndCurrentMotorEndpoints(timeUs_t currentTimeUs)
             motorRangeMax = mixerRuntime.motorOutputHigh;
             motorOutputMin = mixerRuntime.deadbandMotor3dHigh;
             motorOutputRange = mixerRuntime.motorOutputHigh - mixerRuntime.deadbandMotor3dHigh;
-            if (motorOutputMixSign != 1) {
+            if (controllerMix3DModeSign != 1) {
                 reversalTimeUs = currentTimeUs;
             }
-            motorOutputMixSign = 1;
+            controllerMix3DModeSign = 1;
             throttle = 0;
             currentThrottleInputRange = rcCommandThrottleRange3dHigh;
         }
@@ -266,8 +271,11 @@ static void calculateThrottleAndCurrentMotorEndpoints(timeUs_t currentTimeUs)
         motorRangeMin = mixerRuntime.motorOutputLow + motorRangeMinIncrease * (mixerRuntime.motorOutputHigh - mixerRuntime.motorOutputLow);
         motorOutputMin = motorRangeMin;
         motorOutputRange = motorRangeMax - motorRangeMin;
-        motorOutputMixSign = 1;
+        controllerMix3DModeSign = 1;
     }
+
+    motorOutputIdleLevel = ABS((mixerRuntime.motorOutputLow - mixerRuntime.disarmMotorOutput) / (mixerRuntime.motorOutputHigh - mixerRuntime.disarmMotorOutput));
+    motorThrustIdleLevel = motorToThrust(motorOutputIdleLevel, false);
 
     throttle = constrainf(throttle / currentThrottleInputRange, 0.0f, 1.0f);
 }
@@ -351,12 +359,12 @@ static void applyFlipOverAfterCrashModeToMotors(void)
     }
 }
 
-static void applyMixToMotors(float motorMix[MAX_SUPPORTED_MOTORS], motorMixer_t *activeMixer)
+static void applyMixToMotors(float motorMix[MAX_SUPPORTED_MOTORS])
 {
     // Now add in the desired throttle, but keep in a range that doesn't clip adjusted
     // roll/pitch/yaw. This could move throttle down, but also up for those low throttle flips.
     for (int i = 0; i < mixerRuntime.motorCount; i++) {
-        float motorOutput = motorOutputMixSign * motorMix[i] + throttle * activeMixer[i].throttle;
+        float motorOutput = controllerMix3DModeSign * motorMix[i];
 #ifdef USE_THRUST_LINEARIZATION
         motorOutput = pidApplyThrustLinearization(motorOutput);
 #endif
@@ -373,9 +381,9 @@ static void applyMixToMotors(float motorMix[MAX_SUPPORTED_MOTORS], motorMixer_t 
                 motorOutput = (motorOutput < motorRangeMin) ? mixerRuntime.disarmMotorOutput : motorOutput; // Prevent getting into special reserved range
             }
 #endif
-            motorOutput = constrain(motorOutput, mixerRuntime.disarmMotorOutput, motorRangeMax);
+            motorOutput = constrainf(motorOutput, mixerRuntime.disarmMotorOutput, motorRangeMax);
         } else {
-            motorOutput = constrain(motorOutput, motorRangeMin, motorRangeMax);
+            motorOutput = constrainf(motorOutput, motorRangeMin, motorRangeMax);
         }
         motor[i] = motorOutput;
     }
@@ -468,8 +476,46 @@ static void updateDynLpfCutoffs(timeUs_t currentTimeUs, float throttle)
 }
 #endif
 
+void mixWithThrottleLegacy(float *motorMix, float *controllerMix, float controllerMixMin, float controllerMixMax) {
+    float throttleThrust = currentPidProfile->linear_throttle ? throttle : motorToThrust(throttle, true);
+    float normFactor = 1 / (controllerMixRange > 1.0f ? controllerMixRange : 1.0f);
+
+    if (currentPidProfile->mixer_impl == MIXER_IMPL_LEGACY) {
+        // legacy clipping handling
+        if (normFactor < 1.0f) {
+            for (int i = 0; i < mixerRuntime.motorCount; i++) {
+                controllerMix[i] *= normFactor;
+            }
+            // Get the maximum correction by setting offset to center when airmode enabled
+            if (airmodeIsEnabled()) {
+                throttleThrust = 0.5f;
+            }
+        } else {
+            if (airmodeIsEnabled() || throttleThrust > 0.5f) {  // Only automatically adjust throttle when airmode enabled. Airmode logic is always active on high throttle
+                throttleThrust = constrainf(throttleThrust, -controllerMixMin, 1.0f - controllerMixMax);
+            }
+        }
+    } else {
+        float throttleMotor = currentPidProfile->linear_throttle ? thrustToMotor(throttle, true) : throttle; // used to make authority grow faster
+        float authority = airmodeIsEnabled() ? 1.0f : SCALE_UNITARY_RANGE(throttleMotor, 0.5f, 1.0f);
+        normFactor *= authority;
+    }
+
+    for (int i = 0; i < mixerRuntime.motorCount; i++) {
+        if (currentPidProfile->mixer_impl == MIXER_IMPL_SMOOTH) {
+            // clipping handling
+            float offset = mixerRuntime.mixerLaziness ? (ABS(controllerMix[i]) * SCALE_UNITARY_RANGE(throttleThrust, 1, -1))
+                                         : SCALE_UNITARY_RANGE(throttleThrust, -controllerMixMin, -controllerMixMax);
+            controllerMix[i] = (controllerMix[i] + offset) * normFactor;
+        }
+        float thrustMix = controllerMix[i] + throttleThrust * mixerRuntime.currentMixer[i].throttle;
+        motorMix[i] = thrustToMotor(thrustMix, true);
+    }
+}
+
 FAST_CODE_NOINLINE void mixTable(timeUs_t currentTimeUs)
 {
+
     // Find min and max throttle based on conditions. Throttle has to be known before mixing
     calculateThrottleAndCurrentMotorEndpoints(currentTimeUs);
 
@@ -479,20 +525,11 @@ FAST_CODE_NOINLINE void mixTable(timeUs_t currentTimeUs)
         return;
     }
 
-    const bool launchControlActive = isLaunchControlActive();
-
-    motorMixer_t * activeMixer = &mixerRuntime.currentMixer[0];
-#ifdef USE_LAUNCH_CONTROL
-    if (launchControlActive && (currentPidProfile->launchControlMode == LAUNCH_CONTROL_MODE_PITCHONLY)) {
-        activeMixer = &mixerRuntime.launchControlMixer[0];
-    }
-#endif
-
     // Calculate and Limit the PID sum
     const float scaledAxisPidRoll =
-        constrainf(pidData[FD_ROLL].Sum, -currentPidProfile->pidSumLimit, currentPidProfile->pidSumLimit) / PID_MIXER_SCALING;
+            constrainf(pidData[FD_ROLL].Sum * mixerRuntime.linearThrustPIDScaler, -currentPidProfile->pidSumLimit, currentPidProfile->pidSumLimit) / PID_MIXER_SCALING;
     const float scaledAxisPidPitch =
-        constrainf(pidData[FD_PITCH].Sum, -currentPidProfile->pidSumLimit, currentPidProfile->pidSumLimit) / PID_MIXER_SCALING;
+        constrainf(pidData[FD_PITCH].Sum * mixerRuntime.linearThrustPIDScaler, -currentPidProfile->pidSumLimit, currentPidProfile->pidSumLimit) / PID_MIXER_SCALING;
 
     uint16_t yawPidSumLimit = currentPidProfile->pidSumLimitYaw;
 
@@ -504,7 +541,7 @@ FAST_CODE_NOINLINE void mixTable(timeUs_t currentTimeUs)
 #endif // USE_YAW_SPIN_RECOVERY
 
     float scaledAxisPidYaw =
-        constrainf(pidData[FD_YAW].Sum, -yawPidSumLimit, yawPidSumLimit) / PID_MIXER_SCALING;
+        constrainf(pidData[FD_YAW].Sum * mixerRuntime.linearThrustYawPIDScaler, -yawPidSumLimit, yawPidSumLimit) / PID_MIXER_SCALING;
 
     if (!mixerConfig()->yaw_motors_reversed) {
         scaledAxisPidYaw = -scaledAxisPidYaw;
@@ -546,32 +583,12 @@ FAST_CODE_NOINLINE void mixTable(timeUs_t currentTimeUs)
     throttle = pidCompensateThrustLinearization(throttle);
 #endif
 
-    // Find roll/pitch/yaw desired output
-    // ??? Where is the optimal location for this code?
-    float motorMix[MAX_SUPPORTED_MOTORS];
-    float motorMixMax = 0, motorMixMin = 0;
-    for (int i = 0; i < mixerRuntime.motorCount; i++) {
-
-        float mix =
-            scaledAxisPidRoll  * activeMixer[i].roll +
-            scaledAxisPidPitch * activeMixer[i].pitch +
-            scaledAxisPidYaw   * activeMixer[i].yaw;
-
-        if (mix > motorMixMax) {
-            motorMixMax = mix;
-        } else if (mix < motorMixMin) {
-            motorMixMin = mix;
-        }
-        motorMix[i] = mix;
-    }
-
     //  The following fixed throttle values will not be shown in the blackbox log
     // ?? Should they be influenced by airmode?  If not, should go after the apply airmode code.
-    const bool airmodeEnabled = airmodeIsEnabled() || launchControlActive;
 #ifdef USE_YAW_SPIN_RECOVERY
     // 50% throttle provides the maximum authority for yaw recovery when airmode is not active.
     // When airmode is active the throttle setting doesn't impact recovery authority.
-    if (yawSpinDetected && !airmodeEnabled) {
+    if (yawSpinDetected && !airmodeIsEnabled() && !isLaunchControlActive()) {
         throttle = 0.5f;
     }
 #endif // USE_YAW_SPIN_RECOVERY
@@ -579,7 +596,7 @@ FAST_CODE_NOINLINE void mixTable(timeUs_t currentTimeUs)
 #ifdef USE_LAUNCH_CONTROL
     // While launch control is active keep the throttle at minimum.
     // Once the pilot triggers the launch throttle control will be reactivated.
-    if (launchControlActive) {
+    if (isLaunchControlActive()) {
         throttle = 0.0f;
     }
 #endif
@@ -592,35 +609,66 @@ FAST_CODE_NOINLINE void mixTable(timeUs_t currentTimeUs)
     }
 #endif
 
-    mixerThrottle = throttle;
+    float motorMix[MAX_SUPPORTED_MOTORS];
 
-    // apply airmode
-    motorMixRange = motorMixMax - motorMixMin;
-    if (motorMixRange > 1.0f && (getDetectedMotorType() != MOTOR_BRUSHED)) {
-        for (int i = 0; i < mixerRuntime.motorCount; i++) {
-            motorMix[i] /= motorMixRange;
-        }
-        // Get the maximum correction by setting offset to center when airmode enabled
-        if (airmodeEnabled) {
-            throttle = 0.5f;
-        }
-    } else {
-        if (airmodeEnabled || throttle > 0.5f) {  // Only automatically adjust throttle when airmode enabled. Airmode logic is always active on high throttle
-            throttle = constrainf(throttle, -motorMixMin, 1.0f - motorMixMax);
-        }
-    }
+    // mix controller output with throttle
+    mixThingsUp(scaledAxisPidRoll, scaledAxisPidPitch, scaledAxisPidYaw, motorMix);
 
     if (featureIsEnabled(FEATURE_MOTOR_STOP)
         && ARMING_FLAG(ARMED)
         && !mixerRuntime.feature3dEnabled
-        && !airmodeEnabled
+        && !airmodeIsEnabled()
+        && !isLaunchControlActive()
         && !FLIGHT_MODE(GPS_RESCUE_MODE)   // disable motor_stop while GPS Rescue is active
         && (rcData[THROTTLE] < rxConfig()->mincheck)) {
         // motor_stop handling
         applyMotorStop();
     } else {
         // Apply the mix to motor endpoints
-        applyMixToMotors(motorMix, activeMixer);
+        applyMixToMotors(motorMix);
+    }
+}
+
+void mixThingsUp(const float scaledAxisPidRoll, const float scaledAxisPidPitch, const float scaledAxisPidYaw, float *motorMix) {
+    float yawMix[MAX_SUPPORTED_MOTORS];
+    float rollPitchMix[MAX_SUPPORTED_MOTORS];
+    float controllerMix[MAX_SUPPORTED_MOTORS];
+    float yawMixMin = 0, yawMixMax = 0;
+    float rollPitchMixMin = 0, rollPitchMixMax = 0;
+    float controllerMixMin = 0, controllerMixMax = 0;
+
+    for (int i = 0; i < mixerRuntime.motorCount; i++) {
+        float yawMixVal = controllerMix3DModeSign * scaledAxisPidYaw * mixerRuntime.currentMixer[i].yaw;
+        if (yawMixVal > yawMixMax) {
+            yawMixMax = yawMixVal;
+        } else if (yawMixVal < yawMixMin) {
+            yawMixMin = yawMixVal;
+        }
+        yawMix[i] = yawMixVal;
+
+        float rollPitchMixVal = scaledAxisPidRoll * mixerRuntime.currentMixer[i].roll + scaledAxisPidPitch * mixerRuntime.currentMixer[i].pitch;
+        if (rollPitchMixVal > rollPitchMixMax) {
+            rollPitchMixMax = rollPitchMixVal;
+        } else if (rollPitchMixVal < rollPitchMixMin) {
+            rollPitchMixMin = rollPitchMixVal;
+        }
+        rollPitchMix[i] = rollPitchMixVal;
+
+        float controllerMixVal = controllerMix3DModeSign * (rollPitchMixVal + yawMixVal);
+        if (controllerMixVal > controllerMixMax) {
+            controllerMixMax = controllerMixVal;
+        } else if (controllerMixVal < controllerMixMin) {
+            controllerMixMin = controllerMixVal;
+        }
+        controllerMix[i] = controllerMixVal;
+    }
+
+    controllerMixRange = controllerMixMax - controllerMixMin; // measures how much the controller is trying to compensate
+
+    if (currentPidProfile->mixer_impl == MIXER_IMPL_2PASS) {
+        twoPassMix(motorMix, yawMix, rollPitchMix, yawMixMin, yawMixMax, rollPitchMixMin, rollPitchMixMax);
+    } else {
+        mixWithThrottleLegacy(motorMix, controllerMix, controllerMixMin, controllerMixMax);
     }
 }
 
@@ -632,4 +680,68 @@ void mixerSetThrottleAngleCorrection(int correctionValue)
 float mixerGetThrottle(void)
 {
     return mixerThrottle;
+}
+
+float thrustToMotor(float thrust, bool fromIdleLevelOffset) {
+    if (!mixerRuntime.linearThrustEnabled) {
+        return thrust;
+    }
+
+    thrust = constrainf(thrust, 0.0f, 1.0f);
+
+    if (fromIdleLevelOffset) {
+        // simply applying some shifts to the graph, for more info see https://www.desmos.com/calculator/lgtopxo5mt
+        float x = thrustToMotor(thrust * (1.0f - motorThrustIdleLevel) + motorThrustIdleLevel , false);
+        return (x - motorOutputIdleLevel) / (1.0f - motorOutputIdleLevel);
+    }
+
+    float compLevel = SCALE_UNITARY_RANGE(thrust, mixerRuntime.linearThrustLowOutput, mixerRuntime.linearThrustHighOutput);
+    return (compLevel - 1 + sqrtf(sq(1.0f - compLevel) + 4.0f * compLevel * thrust)) / (2.0f * compLevel);
+}
+
+float motorToThrust(float motor, bool fromIdleLevelOffset) {
+    if (!mixerRuntime.linearThrustEnabled) {
+        return motor;
+    }
+
+    motor = constrainf(motor, 0.0f, 1.0f);
+
+    if (fromIdleLevelOffset) {
+        // simply applying some shifts to the graph, for more info see https://www.desmos.com/calculator/lgtopxo5mt
+        float x = motorToThrust(motor * (1.0f - motorOutputIdleLevel) + motorOutputIdleLevel , false);
+        return (x - motorThrustIdleLevel) / (1.0f - motorThrustIdleLevel);
+    }
+
+    float compLevel = SCALE_UNITARY_RANGE(motor, mixerRuntime.linearThrustLowOutput, mixerRuntime.linearThrustHighOutput);
+    return (1.0f - compLevel) * motor + compLevel * sq(motor);
+}
+
+static void twoPassMix(float *motorMix, const float *yawMix, const float *rollPitchMix, float yawMixMin, float yawMixMax,
+                float rollPitchMixMin, float rollPitchMixMax) {
+
+    float throttleMotor = currentPidProfile->linear_throttle ? thrustToMotor(throttle, true) : throttle;
+    float authority = airmodeIsEnabled() ? 1.0f : SCALE_UNITARY_RANGE(throttleMotor, 0.5f, 1.0f);
+
+    float controllerMixNormFactor = authority / MAX(controllerMixRange, 1.0f);
+
+    // filling up motorMix with throttle, yaw and roll/pitch
+    for (int i = 0; i < mixerRuntime.motorCount; i++) {
+        motorMix[i] = throttleMotor; // motorMix have to contain output-proportional values
+
+        // clipping handling
+        float yawOffset = mixerRuntime.mixerLaziness ? (ABS(yawMix[i]) * SCALE_UNITARY_RANGE(throttleMotor, 1, -1))
+                : SCALE_UNITARY_RANGE(throttleMotor, -yawMixMin, -yawMixMax);
+
+        motorMix[i] += (yawMix[i] + yawOffset) * controllerMixNormFactor; // yaw is an output-proportional value (RPM-proportional, actually)
+
+        float motorMixThrust = motorToThrust(motorMix[i], true); // convert into thrust value
+
+        // clipping handling
+        float rollPitchOffset = mixerRuntime.mixerLaziness ? (ABS(rollPitchMix[i]) * SCALE_UNITARY_RANGE(motorMixThrust, 1, -1))
+                : SCALE_UNITARY_RANGE(motorMixThrust, -rollPitchMixMin, -rollPitchMixMax);
+
+        motorMixThrust += (rollPitchOffset + rollPitchMix[i]) * controllerMixNormFactor; // roll and pitch are thrust-proportional values
+
+        motorMix[i] = thrustToMotor(motorMixThrust, true); // translating back into motor value
+    }
 }

@@ -133,7 +133,7 @@ typedef enum {
 #if defined(GYRO_USES_SPI) && defined(USE_32K_CAPABLE_GYRO)
     TABLE_32K,
 #endif
-
+    TABLE_MIXER_IMPL_TYPE,
     LOOKUP_TABLE_COUNT
 } lookupTableIndex_e;
 

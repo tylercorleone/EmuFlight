@@ -60,6 +60,9 @@
 #include "sensors/gyro.h"
 
 #include "pid.h"
+#include "flight/mixer_init.h"
+
+extern mixerRuntime_t mixerRuntime;
 
 typedef enum {
     LEVEL_MODE_OFF = 0,
@@ -203,6 +206,11 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .dterm_abg_half_life = 50,
         .axis_lock_hz = 2,
         .axis_lock_multiplier = 0,
+        .linear_thrust_low_output = 65,
+        .linear_thrust_high_output = 0,
+        .linear_throttle = false,
+        .mixer_impl = MIXER_IMPL_LEGACY,
+        .mixer_laziness = false,
     );
 }
 
@@ -403,7 +411,7 @@ static void detectAndSetCrashRecovery(
     // if crash recovery is on and gps rescue on, then check for a crash
     if (FLIGHT_MODE(GPS_RESCUE_MODE) && crash_recovery == PID_CRASH_RECOVERY_DISARM) {
         if (ARMING_FLAG(ARMED)) {
-            if (getMotorMixRange() >= 1.0f
+            if (getControllerMixRange() >= 1.0f
                 && fabsf(delta) > pidRuntime.crashDtermThreshold
                 && fabsf(errorRate) > pidRuntime.crashGyroThreshold
                 && fabsf(getSetpointRate(axis)) < pidRuntime.crashSetpointThreshold) {
@@ -634,7 +642,7 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile)
     // gradually scale back integration when above windup point
     float dynCi = pidRuntime.dT;
     if (pidRuntime.itermWindupPointInv != 0.0f) {
-        dynCi *= constrainf((1.0f - getMotorMixRange()) * pidRuntime.itermWindupPointInv, 0.0f, 1.0f);
+        dynCi *= constrainf((1.0f - getControllerMixRange()) * pidRuntime.itermWindupPointInv, 0.0f, 1.0f);
     }
 
     rotateItermAndAxisError();
@@ -729,7 +737,10 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile)
         // b = 1 and only c (feedforward weight) can be tuned (amount derivative on measurement or error).
 
         // -----calculate P component
-        pidData[axis].P = pidRuntime.pidCoefficient[axis].Kp * boostedErrorRate * getThrottlePAttenuation() * stickPositionAttenuation(axis, 0);
+        pidData[axis].P = pidRuntime.pidCoefficient[axis].Kp * boostedErrorRate * stickPositionAttenuation(axis, 0);
+        if (!mixerRuntime.linearThrustEnabled) {
+            pidData[axis].P *= getThrottlePAttenuation();
+        }
         if (axis == FD_YAW) {
             pidData[axis].P = pidRuntime.ptermYawLowpassApplyFn((filter_t *) &pidRuntime.ptermYawLowpass, pidData[axis].P);
         }
@@ -749,7 +760,10 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile)
             axisDynCi = (axis == FD_YAW) ? dynCi : pidRuntime.dT; // only apply windup protection to yaw
         }
 
-        float iTermNew = (Ki * axisDynCi + agGain) * itermErrorRate * getThrottleIAttenuation() * stickPositionAttenuation(axis, 1);
+        float iTermNew = (Ki * axisDynCi + agGain) * itermErrorRate * stickPositionAttenuation(axis, 1);
+        if (!mixerRuntime.linearThrustEnabled) {
+            iTermNew *= getThrottleIAttenuation();
+        }
 
         if (SIGN(iterm) != SIGN(iTermNew))
         {
@@ -860,7 +874,10 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile)
             // Apply the dMinFactor
             delta *= dMinFactor;
 #endif
-            pidData[axis].D = delta * getThrottleDAttenuation() * stickPositionAttenuation(axis, 2);
+            pidData[axis].D = delta * stickPositionAttenuation(axis, 2);
+            if (!mixerRuntime.linearThrustEnabled) {
+                pidData[axis].D *= getThrottleDAttenuation();
+            }
         } else {
             pidData[axis].D = 0;
         }

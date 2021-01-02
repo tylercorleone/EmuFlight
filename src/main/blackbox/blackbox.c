@@ -1411,7 +1411,13 @@ static bool blackboxWriteSysinfo(void)
 
         BLACKBOX_PRINT_HEADER_LINE("pidsum_limit", "%d",                    currentPidProfile->pidSumLimit);
         BLACKBOX_PRINT_HEADER_LINE("pidsum_limit_yaw", "%d",                currentPidProfile->pidSumLimitYaw);
-        // End of Betaflight controller parameters
+
+        BLACKBOX_PRINT_HEADER_LINE("linear_thrust_low_output",  "%d",       currentPidProfile->linear_thrust_low_output);
+        BLACKBOX_PRINT_HEADER_LINE("linear_thrust_high_output", "%d",       currentPidProfile->linear_thrust_high_output);
+        BLACKBOX_PRINT_HEADER_LINE("linear_throttle", "%d",                 currentPidProfile->linear_throttle);
+        BLACKBOX_PRINT_HEADER_LINE("mixer_impl", "%d",                      currentPidProfile->mixer_impl);
+        BLACKBOX_PRINT_HEADER_LINE("mixer_laziness", "%d",                  currentPidProfile->mixer_laziness);
+        // End of EmuFlight controller parameters
 
         BLACKBOX_PRINT_HEADER_LINE("deadband", "%d",                        rcControlsConfig()->deadband);
         BLACKBOX_PRINT_HEADER_LINE("yaw_deadband", "%d",                    rcControlsConfig()->yaw_deadband);

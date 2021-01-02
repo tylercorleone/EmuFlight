@@ -325,6 +325,13 @@ void mixerInitProfile(void)
         pt1FilterInit(&mixerRuntime.dynDtermFc[i], pt1FilterGain(10, 2500 * 1e-6f));
     }
 #endif
+
+    mixerRuntime.linearThrustEnabled = currentPidProfile->linear_thrust_low_output && currentPidProfile->linear_thrust_high_output; // both have to be != 0 or a division by 0 could happen
+    mixerRuntime.mixerLaziness = currentPidProfile->mixer_laziness && mixerRuntime.linearThrustEnabled; // laziness requires linear thrust
+    mixerRuntime.linearThrustLowOutput = 0.01f * currentPidProfile->linear_thrust_low_output;
+    mixerRuntime.linearThrustHighOutput = 0.01f * currentPidProfile->linear_thrust_high_output;
+    mixerRuntime.linearThrustPIDScaler = motorToThrust(0.5f, false) / 0.5f; // PID settings retro-compatibility: non-linear thrust / linear thrust
+    mixerRuntime.linearThrustYawPIDScaler = currentPidProfile->mixer_impl == MIXER_IMPL_2PASS ? 1.0f : mixerRuntime.linearThrustPIDScaler;
 }
 
 #ifdef USE_LAUNCH_CONTROL

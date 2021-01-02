@@ -28,7 +28,7 @@ bool simulatedAirmodeEnabled = true;
 float simulatedSetpointRate[3] = { 0,0,0 };
 float simulatedRcDeflection[3] = { 0,0,0 };
 float simulatedThrottlePAttenuation = 1.0f;
-float simulatedMotorMixRange = 0.0f;
+float simulatedControllerMixRange = 0.0f;
 
 int16_t debug[DEBUG16_VALUE_COUNT];
 uint8_t debugMode;
@@ -71,7 +71,7 @@ extern "C" {
     launchControlMode_e unitLaunchControlMode = LAUNCH_CONTROL_MODE_NORMAL;
 
     float getThrottlePAttenuation(void) { return simulatedThrottlePAttenuation; }
-    float getMotorMixRange(void) { return simulatedMotorMixRange; }
+    float getControllerMixRange(void) { return simulatedControllerMixRange; }
     float getSetpointRate(int axis) { return simulatedSetpointRate[axis]; }
     bool isAirmodeActivated() { return simulatedAirmodeEnabled; }
     float getRcDeflectionAbs(int axis) { return fabsf(simulatedRcDeflection[axis]); }
@@ -152,7 +152,7 @@ timeUs_t currentTestTime(void) {
 void resetTest(void) {
     loopIter = 0;
     simulatedThrottlePAttenuation = 1.0f;
-    simulatedMotorMixRange = 0.0f;
+    simulatedControllerMixRange = 0.0f;
 
     pidStabilisationState(PID_STABILISATION_OFF);
     DISABLE_ARMING_FLAG(ARMED);
@@ -290,12 +290,12 @@ TEST(pidControllerTest, testPidLoop) {
     EXPECT_NEAR(-132.25, pidData[FD_YAW].D, calculateTolerance(-132.25));
 
     // Simulate Iterm behaviour during mixer saturation
-    simulatedMotorMixRange = 1.2f;
+    simulatedControllerMixRange = 1.2f;
     pidController(pidProfile, currentTestTime());
     EXPECT_NEAR(-31.3, pidData[FD_ROLL].I, calculateTolerance(-31.3));
     EXPECT_NEAR(29.3, pidData[FD_PITCH].I, calculateTolerance(29.3));
     EXPECT_NEAR(-8.8, pidData[FD_YAW].I, calculateTolerance(-8.8));
-    simulatedMotorMixRange = 0;
+    simulatedControllerMixRange = 0;
 
     // Match the stick to gyro to stop error
     simulatedSetpointRate[FD_ROLL] = 100;
@@ -460,7 +460,7 @@ TEST(pidControllerTest, testCrashRecoveryMode) {
 
     // generate crash detection for roll axis
     gyro.gyroADCf[FD_ROLL]  = 800;
-    simulatedMotorMixRange = 1.2f;
+    simulatedControllerMixRange = 1.2f;
     for (int loop =0; loop <= loopsToCrashTime; loop++) {
         gyro.gyroADCf[FD_ROLL] += gyro.gyroADCf[FD_ROLL];
         // advance the time to avoid initialized state prevention of crash recovery

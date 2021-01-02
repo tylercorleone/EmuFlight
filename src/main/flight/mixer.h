@@ -94,7 +94,7 @@ extern float motor_disarmed[MAX_SUPPORTED_MOTORS];
 struct rxConfig_s;
 
 uint8_t getMotorCount(void);
-float getMotorMixRange(void);
+float getControllerMixRange(void);
 bool areMotorsRunning(void);
 
 void mixerLoadMix(int index, motorMixer_t *customMixers);
@@ -117,3 +117,5 @@ bool isFixedWing(void);
 
 float getMotorOutputLow(void);
 float getMotorOutputHigh(void);
+float thrustToMotor(float thrust, bool fromIdleLevelOffset);
+float motorToThrust(float motor, bool fromIdleLevelOffset);

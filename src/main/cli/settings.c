@@ -481,6 +481,10 @@ static const char* const lookupTable32k[] = {
 };
 #endif
 
+static const char *const lookupTableMixerImplType[] = {
+  "LEGACY", "SMOOTH", "2PASS"
+};
+
 #define LOOKUP_TABLE_ENTRY(name) { name, ARRAYLEN(name) }
 
 const lookupTableEntry_t lookupTables[] = {
@@ -595,6 +599,8 @@ const lookupTableEntry_t lookupTables[] = {
 #if defined(GYRO_USES_SPI) && defined(USE_32K_CAPABLE_GYRO)
     LOOKUP_TABLE_ENTRY(lookupTable32k),
 #endif
+
+    LOOKUP_TABLE_ENTRY(lookupTableMixerImplType),
 };
 
 #undef LOOKUP_TABLE_ENTRY
@@ -1144,6 +1150,12 @@ const clivalue_t valueTable[] = {
 
     { "motor_output_limit",         VAR_UINT8 | PROFILE_VALUE,  .config.minmaxUnsigned = { MOTOR_OUTPUT_LIMIT_PERCENT_MIN, MOTOR_OUTPUT_LIMIT_PERCENT_MAX }, PG_PID_PROFILE, offsetof(pidProfile_t, motor_output_limit) },
     { "auto_profile_cell_count",    VAR_INT8 | PROFILE_VALUE,  .config.minmax = { AUTO_PROFILE_CELL_COUNT_CHANGE, MAX_AUTO_DETECT_CELL_COUNT }, PG_PID_PROFILE, offsetof(pidProfile_t, auto_profile_cell_count) },
+
+    { "linear_thrust_low_output",   VAR_UINT8  | PROFILE_VALUE, .config.minmax = { 0, 100 }, PG_PID_PROFILE, offsetof(pidProfile_t, linear_thrust_low_output) },
+    { "linear_thrust_high_output",  VAR_UINT8  | PROFILE_VALUE, .config.minmax = { 0, 100 }, PG_PID_PROFILE, offsetof(pidProfile_t, linear_thrust_high_output) },
+    { "linear_throttle",            VAR_UINT8  | PROFILE_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_PID_PROFILE, offsetof(pidProfile_t, linear_throttle) },
+    { "mixer_impl",                 VAR_UINT8  | PROFILE_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_MIXER_IMPL_TYPE }, PG_PID_PROFILE, offsetof(pidProfile_t, mixer_impl) },
+    { "mixer_laziness",             VAR_UINT8  | PROFILE_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_PID_PROFILE, offsetof(pidProfile_t, mixer_laziness) },
 
 #ifdef USE_LAUNCH_CONTROL
     { "launch_control_mode",        VAR_UINT8  | PROFILE_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_LAUNCH_CONTROL_MODE }, PG_PID_PROFILE, offsetof(pidProfile_t, launchControlMode) },

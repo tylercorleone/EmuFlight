@@ -23,7 +23,7 @@
 #include "platform.h"
 
 #include "flight/mixer.h"
-
+#include "flight/pid.h"
 
 typedef struct mixerRuntime_s {
     uint8_t motorCount;
@@ -57,6 +57,14 @@ typedef struct mixerRuntime_s {
     float vbatFull;
     float vbatRangeToCompensate;
 #endif
+
+    bool linearThrustEnabled;
+    bool mixerLaziness;
+    float linearThrustLowOutput;
+    float linearThrustHighOutput;
+    float linearThrustPIDScaler;
+    float linearThrustYawPIDScaler;
+
 } mixerRuntime_t;
 
 extern mixerRuntime_t mixerRuntime;
